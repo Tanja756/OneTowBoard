@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load url_helpers %}
 
 {% block title %}{{ listing.title }} — OneTwoBoard{% endblock %}
 
@@ -64,11 +65,11 @@
   <!-- Правая колонка: цена и контакты -->
   <div class="col-lg-4">
     <!-- Цена (над карточкой продавца) -->
-    {% if listing.price %}
-      <div class="mb-3">
-        <span class="fs-3 fw-bold text-success">{{ listing.price }} ₽</span>
-      </div>
-    {% endif %}
+{% if listing.price %}
+  <div class="mb-3">
+    <span class="fs-3 fw-bold text-success">{{ listing.price|price_display }} ₽</span>
+  </div>
+{% endif %}
 
     {% if show_contacts %}
       <!-- Карточка продавца -->
@@ -143,13 +144,11 @@
 
 {% block extra_js %}
 <script>
-  // Функция показа телефона
   function showPhone() {
     document.getElementById('showPhoneBtn').style.display = 'none';
     document.getElementById('phoneNumber').style.display = 'block';
   }
 
-  // Слайдер в модальном окне
   document.addEventListener('DOMContentLoaded', function() {
     const mainImage = document.getElementById('mainImage');
     const thumbs = document.querySelectorAll('.gallery-thumb');
@@ -170,16 +169,20 @@
 
     let currentIndex = 0;
 
+    // Обновление галереи и модалки под текущий индекс
     function updateModal(index) {
       if (imageUrls.length === 0) return;
       currentIndex = (index + imageUrls.length) % imageUrls.length;
       modalImage.src = imageUrls[currentIndex];
       imageCounter.textContent = `${currentIndex + 1} / ${imageUrls.length}`;
+      // Обновляем выделение миниатюр
       thumbs.forEach((t, i) => {
         if (i === currentIndex) t.classList.add('border', 'border-primary');
         else t.classList.remove('border', 'border-primary');
       });
+      // Обновляем основное изображение
       if (mainImage) mainImage.src = imageUrls[currentIndex];
+      // Обновляем миниатюры в модалке
       renderModalThumbs();
     }
 
@@ -200,22 +203,27 @@
       });
     }
 
+    // Клик по миниатюрам → только переключение основного фото
+    thumbs.forEach((thumb, idx) => {
+      thumb.addEventListener('click', function(e) {
+        e.stopPropagation(); // предотвращаем всплытие, если надо
+        currentIndex = idx;
+        updateModal(currentIndex);
+        // модалку не открываем
+      });
+    });
+
+    // Клик по основному фото → открываем модалку
     mainImage.addEventListener('click', function() {
       updateModal(currentIndex);
       modal.show();
     });
 
-    thumbs.forEach((thumb, idx) => {
-      thumb.addEventListener('click', function() {
-        currentIndex = idx;
-        updateModal(currentIndex);
-        modal.show();
-      });
-    });
-
+    // Кнопки модалки
     prevBtn.addEventListener('click', () => updateModal(currentIndex - 1));
     nextBtn.addEventListener('click', () => updateModal(currentIndex + 1));
 
+    // Клавиатура
     document.addEventListener('keydown', function(e) {
       if (!modal._isShown) return;
       if (e.key === 'ArrowLeft') {
@@ -227,10 +235,12 @@
       }
     });
 
+    // При открытии модалки первый раз
     document.getElementById('imageModal').addEventListener('show.bs.modal', function() {
       renderModalThumbs();
     });
 
+    // Начальное выделение первой миниатюры
     if (thumbs.length > 0) thumbs[0].classList.add('border', 'border-primary');
   });
 </script>
