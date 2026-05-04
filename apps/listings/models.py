@@ -10,7 +10,7 @@ class Listing(models.Model):
     )
     title = models.CharField(max_length=200, verbose_name='Заголовок')
     description = models.TextField(verbose_name='Описание')
-    price = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True, verbose_name='Цена')
+    price = models.PositiveIntegerField(blank=True, null=True, verbose_name='Цена')
     category = models.ForeignKey(Category, on_delete=models.PROTECT, verbose_name='Категория')
     author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='listings')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='moderation', verbose_name='Статус')

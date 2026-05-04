@@ -23,3 +23,12 @@ def show_category_tree(current_category=None):
 def show_category_tree_select(selected_slug=None):
     categories = Category.objects.filter(parent__isnull=True).prefetch_related('children')
     return {'categories': categories, 'selected_slug': selected_slug}
+
+@register.simple_tag
+def get_category_image(category):
+    """Возвращает URL изображения категории или ближайшего родителя с изображением."""
+    while category:
+        if category.image:
+            return category.image.url
+        category = category.parent
+    return ''

@@ -1,6 +1,5 @@
 {% extends 'base.html' %}
 {% block title %}Мои объявления — {{ site_name }}{% endblock %}
-
 {% block content %}
 <h1>Мои объявления</h1>
 {% if listings %}
@@ -15,17 +14,16 @@
                     {% endwith %}
                     <div>
                         <a href="{% url 'listings:detail' listing.pk %}" class="text-decoration-none fw-bold">{{ listing.title }}</a>
-                        <div class="small text-muted">{{ listing.created_at|date:"d.m.Y H:i" }}</div>
+                        <div class="small text-muted">
+                            {{ listing.created_at|date:"d.m.Y H:i" }}
+                            <span class="badge {% if listing.status == 'active' %}bg-success{% elif listing.status == 'moderation' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+                                {{ listing.get_status_display }}
+                            </span>
+                            {% if listing.category %}
+                                в <a href="{% url 'categories:detail' listing.category.slug %}">{{ listing.category.name }}</a>
+                            {% endif %}
+                        </div>
                     </div>
-    <div>
-        <a href="...">{{ listing.title }}</a>
-        <div class="small text-muted">
-            {{ listing.created_at|date:"d.m.Y H:i" }}
-            <span class="badge {% if listing.status == 'active' %}bg-success{% elif listing.status == 'moderation' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
-                {{ listing.get_status_display }}
-            </span>
-        </div>
-    </div>
                 </div>
                 <div>
                     <a href="{% url 'listings:edit' listing.pk %}" class="btn btn-sm btn-outline-secondary">✎</a>

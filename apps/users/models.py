@@ -13,9 +13,16 @@ class Profile(models.Model):
     city = models.CharField(max_length=100, blank=True, verbose_name='Город')
     avatar = models.ImageField(upload_to='avatars/', blank=True, null=True, verbose_name='Аватар')
     profile_type = models.CharField(max_length=10, choices=USER_TYPE_CHOICES, default='person', verbose_name='Тип профиля')
+    display_name = models.CharField(max_length=100, blank=True, verbose_name='Отображаемое имя')
 
     def __str__(self):
         return f'Профиль {self.user.username}'
+
+    def get_display_name(self):
+        """Возвращает отображаемое имя, если не пустое, иначе username."""
+        if self.display_name and self.display_name.strip():
+            return self.display_name.strip()
+        return self.user.username
 
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):

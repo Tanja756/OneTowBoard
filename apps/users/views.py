@@ -45,7 +45,6 @@ def logout_view(request):
 
 @login_required
 def profile_view(request):
-    """Настройки профиля"""
     if request.method == 'POST':
         user = request.user
         user.email = request.POST.get('email', user.email)
@@ -53,6 +52,10 @@ def profile_view(request):
         user.profile.phone = request.POST.get('phone', '')
         user.profile.city = request.POST.get('city', '')
         user.profile.profile_type = request.POST.get('profile_type', 'person')
+        display_name = request.POST.get('display_name', '').strip()
+        if not display_name:
+            display_name = user.username
+        user.profile.display_name = display_name
         avatar = request.FILES.get('avatar')
         if avatar:
             user.profile.avatar = avatar

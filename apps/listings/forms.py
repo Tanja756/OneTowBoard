@@ -6,5 +6,7 @@ class ListingForm(forms.ModelForm):
         model = Listing
         fields = ['title', 'description', 'price']
         widgets = {
-            'description': forms.Textarea(attrs={'rows': 5}),
+            'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Например: Продам двухкомнатную квартиру'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 5, 'placeholder': 'Подробное описание, характеристики, состояние...'}),
+            'price': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Например: 1500'}),
         }

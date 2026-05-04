@@ -100,29 +100,16 @@ def edit_listing_view(request, pk):
 
     if request.method == 'POST':
         form = ListingForm(request.POST, instance=listing)
-        category_slug = request.POST.get('category_slug')
-        if not category_slug:
-            messages.error(request, 'Выберите категорию.')
-            return render(request, 'listings/edit.html', {
-                'form': form,
-                'listing': listing,
-                'existing_images': listing.images.all(),
-                'existing_params_json': json.dumps(listing.parameters) if listing.parameters else '{}',
-            })
-
-        try:
-            category = Category.objects.get(slug=category_slug)
-        except Category.DoesNotExist:
-            messages.error(request, 'Категория не найдена.')
-            return render(request, 'listings/edit.html', {
-                'form': form,
-                'listing': listing,
-                'existing_images': listing.images.all(),
-                'existing_params_json': json.dumps(listing.parameters) if listing.parameters else '{}',
-            })
-
         if form.is_valid():
-            all_params = category.get_all_parameters()
+            listing = form.save(commit=False)
+
+            # Удаляем отмеченные изображения
+            delete_ids = request.POST.getlist('delete_images')
+            if delete_ids:
+                ListingImage.objects.filter(id__in=delete_ids, listing=listing).delete()
+
+            # Сохраняем параметры категории
+            all_params = listing.category.get_all_parameters() if listing.category else {}
             param_values = {}
             missing_params = []
             for slug, param_obj in all_params.items():
@@ -139,35 +126,37 @@ def edit_listing_view(request, pk):
                     'listing': listing,
                     'existing_images': listing.images.all(),
                     'existing_params_json': json.dumps(listing.parameters) if listing.parameters else '{}',
-                    'selected_category_slug': category_slug,
                     'parameters': list(all_params.values()),
                     'param_values': param_values,
                     'missing_params': missing_params,
                 })
 
-            listing = form.save(commit=False)
-            listing.category = category
             listing.parameters = param_values
             listing.save()
 
+            # Сохраняем новые изображения
             images = request.FILES.getlist('images')
             for img in images:
                 ListingImage.objects.create(listing=listing, image=img)
+
             messages.success(request, 'Объявление обновлено.')
             return redirect('listings:detail', pk=pk)
     else:
         form = ListingForm(instance=listing)
-        category = listing.category
-        all_params = category.get_all_parameters() if category else {}
-        param_values = listing.parameters or {}
-        return render(request, 'listings/edit.html', {
-            'form': form,
-            'listing': listing,
-            'existing_images': listing.images.all(),
-            'existing_params_json': json.dumps(listing.parameters) if listing.parameters else '{}',
-            'parameters': list(all_params.values()),
-            'param_values': param_values,
-        })
+
+    category = listing.category
+    all_params = category.get_all_parameters() if category else {}
+    param_values = listing.parameters or {}
+
+    context = {
+        'form': form,
+        'listing': listing,
+        'existing_images': listing.images.all(),
+        'existing_params_json': json.dumps(listing.parameters) if listing.parameters else '{}',
+        'parameters': list(all_params.values()),
+        'param_values': param_values,
+    }
+    return render(request, 'listings/edit.html', context)
 
 @login_required
 def delete_listing_view(request, pk):
