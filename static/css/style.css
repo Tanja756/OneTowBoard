@@ -1,21 +1,39 @@
+/* static/css/style.css */
+
 body {
     font-family: Arial, sans-serif;
-    margin: 20px;
-    background-color: #f5f5f5;
+    margin: 0;
+    background-color: #f0f0f0;  /* светло-серый фон */
+    min-height: 100vh;
 }
-header nav a {
-    margin-right: 15px;
-    text-decoration: none;
-    color: #0066cc;
+
+/* Белые блоки с лёгкой тенью для контрастности */
+.card,
+.list-group-item,
+.dropdown-menu {
+    background-color: #ffffff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
-main {
-    margin-top: 20px;
+
+/* Шапка и подвал */
+header.bg-white {
+    background-color: #ffffff !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
-.form-control, .form-select {
+
+footer.bg-light {
+    background-color: #f8f8f8 !important;
+}
+
+/* Поля ввода */
+.form-control,
+.form-select {
     border-color: #adb5bd;
     box-shadow: none;
 }
-.form-control:focus, .form-select:focus {
+
+.form-control:focus,
+.form-select:focus {
     border-color: #86b7fe;
     box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
 }
