@@ -1,0 +1,19 @@
+/* static/admin/css/admin_custom.css */
+body {
+    background: #f4f6f9;
+}
+.module {
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+#header {
+    background: #1a1a2e;
+    color: #fff;
+}
+#branding h1 {
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+.object-tools a {
+    border-radius: 6px;
+}

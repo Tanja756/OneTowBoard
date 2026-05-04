@@ -1,0 +1,44 @@
+{% load url_helpers %}
+
+<div class="d-flex gap-2 mb-3 align-items-center">
+  <!-- Кнопка Фильтр цены -->
+  <div class="dropdown">
+    <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+      💰 Цена
+    </button>
+    <div class="dropdown-menu p-3" style="min-width: 260px;">
+      <form method="get" action="">
+        {% if query %}<input type="hidden" name="q" value="{{ query }}">{% endif %}
+        <div class="row g-2 align-items-end mb-2">
+          <div class="col-5">
+            <label class="form-label small">Цена от</label>
+            <input type="number" name="price_from" class="form-control form-control-sm" value="{{ price_from }}" placeholder="0">
+          </div>
+          <div class="col-5">
+            <label class="form-label small">до</label>
+            <input type="number" name="price_to" class="form-control form-control-sm" value="{{ price_to }}" placeholder="0">
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm w-100">Показать</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Кнопка Сортировка -->
+  <div class="dropdown">
+    <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+      ↕️ Сортировка
+    </button>
+    <ul class="dropdown-menu">
+      <li><a class="dropdown-item {% if sort == 'newest' %}active{% endif %}" href="?{% url_replace sort='newest' %}">Сначала новые</a></li>
+      <li><a class="dropdown-item {% if sort == 'oldest' %}active{% endif %}" href="?{% url_replace sort='oldest' %}">Сначала старые</a></li>
+      <li><hr class="dropdown-divider"></li>
+      <li><a class="dropdown-item {% if sort == 'cheapest' %}active{% endif %}" href="?{% url_replace sort='cheapest' %}">Сначала дешевле</a></li>
+      <li><a class="dropdown-item {% if sort == 'expensive' %}active{% endif %}" href="?{% url_replace sort='expensive' %}">Сначала дороже</a></li>
+    </ul>
+  </div>
+
+  {% if price_from or price_to %}
+    <a href="?{% url_replace price_from='' price_to='' %}" class="text-decoration-none small text-danger ms-2">✕ Сбросить фильтр</a>
+  {% endif %}
+</div>

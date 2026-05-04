@@ -1,0 +1,20 @@
+{% for param in parameters %}
+<div class="mb-2">
+    <label class="form-label small">{{ param.name }}</label>
+    {% if param.param_type == 'boolean' %}
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="param_{{ param.slug }}" id="param_{{ param.slug }}">
+            <label class="form-check-label" for="param_{{ param.slug }}">Да</label>
+        </div>
+    {% else %}
+        <select class="form-select form-select-sm" name="param_{{ param.slug }}">
+            <option value="">Не выбрано</option>
+            {% for choice in param.get_choices_list %}
+                <option value="{{ choice }}">{{ choice }}</option>
+            {% endfor %}
+        </select>
+    {% endif %}
+</div>
+{% empty %}
+<p class="text-muted small">Нет дополнительных параметров для этой категории.</p>
+{% endfor %}

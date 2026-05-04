@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load category_tags %}
+
+{% block title %}Редактирование — {{ listing.title }}{% endblock %}
+{% block content %}
+<h1>Редактировать объявление</h1>
+<form method="post" enctype="multipart/form-data" id="listingForm" novalidate>
+  {% csrf_token %}
+  
+  <div class="mb-3">
+    <label for="id_title" class="form-label">Заголовок</label>
+    {{ form.title }}
+    {{ form.title.errors }}
+  </div>
+  <div class="mb-3">
+    <label for="id_description" class="form-label">Описание</label>
+    {{ form.description }}
+    {{ form.description.errors }}
+  </div>
+  <div class="mb-3">
+    <label for="id_price" class="form-label">Цена</label>
+    {{ form.price }}
+    {{ form.price.errors }}
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label">Категория</label>
+    <input type="hidden" name="category_slug" id="id_category_slug" value="{{ selected_category_slug|default:listing.category.slug }}">
+    <div class="border p-2" style="max-height: 300px; overflow-y: auto;">
+      {% show_category_tree_select selected_slug=selected_category_slug|default:listing.category.slug %}
+    </div>
+  </div>
+
+  <div id="parametersContainer"></div>
+
+  <div class="mb-3">
+    <label class="form-label">Текущие фотографии</label>
+    <div class="d-flex flex-wrap gap-2">
+      {% for img in existing_images %}
+        <img src="{{ img.image.url }}" width="100" alt="Фото">
+      {% empty %}
+        <p class="text-muted">Нет загруженных фотографий.</p>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="mb-3">
+    <label for="id_images" class="form-label">Добавить ещё фотографии:</label>
+    <input type="file" name="images" id="id_images" multiple accept="image/*" class="form-control">
+  </div>
+
+  <button type="submit" class="btn btn-primary">Сохранить изменения</button>
+</form>
+<p class="mt-2"><a href="{% url 'listings:detail' listing.pk %}">Отмена</a></p>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const slugInput = document.getElementById('id_category_slug');
+    const container = document.getElementById('parametersContainer');
+    const existingParams = {{ existing_params_json|safe }};
+
+    async function loadParameters() {
+        const slug = slugInput.value;
+        container.innerHTML = '';  // Очистка
+        if (!slug) return;
+
+        try {
+            const response = await fetch(`{% url 'categories:get_parameters' %}?category_slug=${slug}`);
+            const data = await response.json();
+            container.innerHTML = data.html;
+
+            // Подставляем сохранённые значения
+            for (let [key, value] of Object.entries(existingParams)) {
+                const el = document.querySelector(`[name="param_${key}"]`);
+                if (el) {
+                    if (el.type === 'checkbox') {
+                        el.checked = (value === 'true' || value === '1');
+                    } else {
+                        el.value = value;
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Ошибка загрузки параметров:', error);
+        }
+    }
+
+    slugInput.addEventListener('change', loadParameters);
+    if (slugInput.value) {
+        loadParameters();
+    }
+});
+</script>
+{% endblock %}

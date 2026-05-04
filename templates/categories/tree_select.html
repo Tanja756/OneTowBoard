@@ -1,0 +1,90 @@
+<ul class="list-unstyled" id="categoryTreeSelect">
+  {% for category in categories %}
+    <li class="mb-1">
+      <div class="d-flex align-items-center">
+        {% if category.children.exists %}
+          <button class="btn btn-sm btn-light p-0 me-1 tree-toggle collapsed" type="button"
+                  data-bs-toggle="collapse" data-bs-target="#select-subcat-{{ category.slug }}"
+                  aria-expanded="false">
+            <span class="toggle-icon">▶</span>
+          </button>
+        {% else %}
+          <span style="width:20px; display:inline-block;"></span>
+        {% endif %}
+        <a href="#" class="text-decoration-none category-select-item {% if selected_slug == category.slug %}fw-bold text-primary{% endif %}"
+           data-slug="{{ category.slug }}"
+           data-has-children="{{ category.children.exists|yesno:'true,false' }}">
+          {{ category.name }}
+        </a>
+      </div>
+      {% if category.children.exists %}
+        <div class="collapse ps-3" id="select-subcat-{{ category.slug }}" data-bs-parent="#categoryTreeSelect">
+          <ul class="list-unstyled">
+            {% for child in category.children.all %}
+              <li>
+                <a href="#" class="text-decoration-none category-select-item {% if selected_slug == child.slug %}fw-bold text-primary{% endif %}"
+                   data-slug="{{ child.slug }}"
+                   data-has-children="false">
+                  {{ child.name }}
+                </a>
+              </li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% endif %}
+    </li>
+  {% endfor %}
+</ul>
+
+<script>
+(function() {
+  const tree = document.getElementById('categoryTreeSelect');
+  if (!tree) return;
+
+  const hiddenInput = document.getElementById('id_category_slug');
+  const items = tree.querySelectorAll('.category-select-item');
+  const toggles = tree.querySelectorAll('.tree-toggle');
+
+  // Управление иконками при открытии/закрытии коллапсов
+  tree.addEventListener('show.bs.collapse', function(e) {
+    const btn = tree.querySelector(`[data-bs-target="#${e.target.id}"]`);
+    if (btn) btn.querySelector('.toggle-icon').textContent = '▼';
+  });
+  tree.addEventListener('hide.bs.collapse', function(e) {
+    const btn = tree.querySelector(`[data-bs-target="#${e.target.id}"]`);
+    if (btn) btn.querySelector('.toggle-icon').textContent = '▶';
+  });
+
+  // Выбор категории (только конечные)
+  tree.addEventListener('click', function(e) {
+    const item = e.target.closest('.category-select-item');
+    if (!item) return;
+
+    const hasChildren = item.getAttribute('data-has-children') === 'true';
+    if (hasChildren) {
+      e.preventDefault();
+      const slug = item.getAttribute('data-slug');
+      const btn = tree.querySelector(`[data-bs-target="#select-subcat-${slug}"]`);
+      if (btn) btn.click(); // Bootstrap сам переключит collapse с аккордеоном
+      return;
+    }
+
+    e.preventDefault();
+    items.forEach(i => i.classList.remove('fw-bold', 'text-primary'));
+    item.classList.add('fw-bold', 'text-primary');
+    if (hiddenInput) {
+      hiddenInput.value = item.getAttribute('data-slug');
+      hiddenInput.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+  });
+
+  // Инициализация выделения, если есть значение
+  if (hiddenInput && hiddenInput.value) {
+    const selectedItem = tree.querySelector(`.category-select-item[data-slug="${hiddenInput.value}"]`);
+    if (selectedItem) {
+      items.forEach(i => i.classList.remove('fw-bold', 'text-primary'));
+      selectedItem.classList.add('fw-bold', 'text-primary');
+    }
+  }
+})();
+</script>

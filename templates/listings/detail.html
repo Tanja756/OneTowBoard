@@ -1,0 +1,237 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ listing.title }} — OneTwoBoard{% endblock %}
+
+{% block content %}
+
+<!-- Хлебные крошки -->
+<nav aria-label="breadcrumb" class="mb-3 small">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{% url 'listings:index' %}">Главная</a></li>
+    {% if listing.category %}
+      <li class="breadcrumb-item"><a href="{% url 'categories:detail' listing.category.slug %}">{{ listing.category.name }}</a></li>
+    {% endif %}
+    <li class="breadcrumb-item active" aria-current="page">{{ listing.title|truncatechars:40 }}</li>
+  </ol>
+</nav>
+
+<div class="row g-4">
+  <!-- Левая колонка: галерея и описание -->
+  <div class="col-lg-8">
+    <!-- Галерея -->
+    {% if images %}
+      <div class="mb-3">
+        <img id="mainImage" src="{{ images.0.image.url }}" class="img-fluid rounded" alt="{{ listing.title }}"
+             style="width: 100%; max-height: 560px; object-fit: contain; background: #f8f8f8; cursor: pointer;">
+      </div>
+      {% if images|length > 1 %}
+        <div class="d-flex gap-1 overflow-auto" id="galleryThumbs">
+          {% for img in images %}
+            <img src="{{ img.image.url }}" class="rounded gallery-thumb {% if forloop.first %}border border-primary{% endif %}"
+                 width="80" height="80" style="object-fit: cover; cursor: pointer;"
+                 data-full="{{ img.image.url }}" data-index="{{ forloop.counter0 }}">
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% else %}
+      <div class="bg-light rounded d-flex align-items-center justify-content-center" style="height: 300px;">
+        <span class="text-muted">Нет фото</span>
+      </div>
+    {% endif %}
+
+    <!-- Описание -->
+    <div class="mt-4">
+      <h1 class="h4">{{ listing.title }}</h1>
+      {% if listing.status != 'active' %}
+        <div class="alert alert-warning">Статус: {{ listing.get_status_display }}</div>
+      {% endif %}
+      <p class="text-muted small">Категория: {{ listing.category.name|default:"Без категории" }}</p>
+      <p class="text-muted small">Опубликовано: {{ listing.created_at|date:"d.m.Y H:i" }}</p>
+      <hr>
+      <h2 class="h6">Описание</h2>
+      <p>{{ listing.description|linebreaks }}</p>
+    </div>
+
+    {% if user == listing.author or user.is_staff %}
+      <div class="mt-3">
+        <a href="{% url 'listings:edit' listing.pk %}" class="btn btn-outline-secondary btn-sm">✎ Редактировать</a>
+        <a href="{% url 'listings:delete' listing.pk %}" class="btn btn-outline-danger btn-sm">✕ Удалить</a>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Правая колонка: цена и контакты -->
+  <div class="col-lg-4">
+    <!-- Цена (над карточкой продавца) -->
+    {% if listing.price %}
+      <div class="mb-3">
+        <span class="fs-3 fw-bold text-success">{{ listing.price }} ₽</span>
+      </div>
+    {% endif %}
+
+    {% if show_contacts %}
+      <!-- Карточка продавца -->
+      <div class="card mb-3 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex align-items-start mb-3">
+            <div class="flex-shrink-0 me-3">
+              {% if listing.author.profile.avatar %}
+                <img src="{{ listing.author.profile.avatar.url }}" class="rounded-circle"
+                     width="48" height="48" style="object-fit: cover;" alt="{{ listing.author.username }}">
+              {% else %}
+                <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center"
+                     style="width:48px; height:48px; font-size:1.2rem;">
+                  {{ listing.author.username|slice:":1"|upper }}
+                </div>
+              {% endif %}
+            </div>
+            <div>
+              <strong>{{ listing.author.username }}</strong>
+              <div class="small text-muted">
+                {% if listing.author.profile.profile_type == 'company' %}Компания{% else %}Частное лицо{% endif %}
+              </div>
+            </div>
+          </div>
+
+          {% if listing.author.profile.phone %}
+            <button id="showPhoneBtn" class="btn btn-success w-100 mb-2" onclick="showPhone()">
+              📞 Показать телефон
+            </button>
+            <p id="phoneNumber" class="fw-bold text-success mb-2" style="display: none;">
+              {{ listing.author.profile.phone }}
+            </p>
+          {% else %}
+            <p class="text-muted small">Телефон не указан</p>
+          {% endif %}
+        </div>
+      </div>
+
+    {% else %}
+      <div class="card shadow-sm">
+        <div class="card-body text-center">
+          <p class="mb-3">Чтобы увидеть контакты</p>
+          <a href="{% url 'users:login' %}" class="btn btn-primary w-100 mb-2">Войти</a>
+          <a href="{% url 'users:register' %}" class="btn btn-outline-primary w-100">Зарегистрироваться</a>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Модальное окно для просмотра фото (слайдер) -->
+<div class="modal fade" id="imageModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-fullscreen">
+    <div class="modal-content bg-dark">
+      <div class="modal-header border-0">
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+      </div>
+      <div class="modal-body d-flex flex-column align-items-center justify-content-center">
+        <img id="modalImage" src="" class="img-fluid" style="max-height: 80vh; object-fit: contain;" alt="Просмотр фото">
+        <div class="d-flex gap-1 mt-3 overflow-auto" id="modalThumbs"></div>
+      </div>
+      <div class="modal-footer border-0 justify-content-center">
+        <button class="btn btn-outline-light" id="prevBtn">← Назад</button>
+        <span class="text-white mx-3" id="imageCounter">1 / 1</span>
+        <button class="btn btn-outline-light" id="nextBtn">Вперёд →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Функция показа телефона
+  function showPhone() {
+    document.getElementById('showPhoneBtn').style.display = 'none';
+    document.getElementById('phoneNumber').style.display = 'block';
+  }
+
+  // Слайдер в модальном окне
+  document.addEventListener('DOMContentLoaded', function() {
+    const mainImage = document.getElementById('mainImage');
+    const thumbs = document.querySelectorAll('.gallery-thumb');
+    const modal = new bootstrap.Modal(document.getElementById('imageModal'));
+    const modalImage = document.getElementById('modalImage');
+    const modalThumbs = document.getElementById('modalThumbs');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const imageCounter = document.getElementById('imageCounter');
+
+    if (!mainImage) return;
+
+    const imageUrls = [];
+    thumbs.forEach(thumb => imageUrls.push(thumb.dataset.full));
+    if (imageUrls.length === 0 && mainImage.src) {
+      imageUrls.push(mainImage.src);
+    }
+
+    let currentIndex = 0;
+
+    function updateModal(index) {
+      if (imageUrls.length === 0) return;
+      currentIndex = (index + imageUrls.length) % imageUrls.length;
+      modalImage.src = imageUrls[currentIndex];
+      imageCounter.textContent = `${currentIndex + 1} / ${imageUrls.length}`;
+      thumbs.forEach((t, i) => {
+        if (i === currentIndex) t.classList.add('border', 'border-primary');
+        else t.classList.remove('border', 'border-primary');
+      });
+      if (mainImage) mainImage.src = imageUrls[currentIndex];
+      renderModalThumbs();
+    }
+
+    function renderModalThumbs() {
+      if (imageUrls.length <= 1) {
+        modalThumbs.innerHTML = '';
+        return;
+      }
+      modalThumbs.innerHTML = imageUrls.map((url, i) => 
+        `<img src="${url}" class="rounded ${i === currentIndex ? 'border border-primary' : ''}" 
+              width="60" height="60" style="object-fit: cover; cursor: pointer;" 
+              data-index="${i}">`
+      ).join('');
+      modalThumbs.querySelectorAll('img').forEach(thumb => {
+        thumb.addEventListener('click', function() {
+          updateModal(parseInt(this.dataset.index));
+        });
+      });
+    }
+
+    mainImage.addEventListener('click', function() {
+      updateModal(currentIndex);
+      modal.show();
+    });
+
+    thumbs.forEach((thumb, idx) => {
+      thumb.addEventListener('click', function() {
+        currentIndex = idx;
+        updateModal(currentIndex);
+        modal.show();
+      });
+    });
+
+    prevBtn.addEventListener('click', () => updateModal(currentIndex - 1));
+    nextBtn.addEventListener('click', () => updateModal(currentIndex + 1));
+
+    document.addEventListener('keydown', function(e) {
+      if (!modal._isShown) return;
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        updateModal(currentIndex - 1);
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        updateModal(currentIndex + 1);
+      }
+    });
+
+    document.getElementById('imageModal').addEventListener('show.bs.modal', function() {
+      renderModalThumbs();
+    });
+
+    if (thumbs.length > 0) thumbs[0].classList.add('border', 'border-primary');
+  });
+</script>
+{% endblock %}

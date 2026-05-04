@@ -12,6 +12,7 @@ build/
 develop-eggs/
 dist/
 downloads/
+media/
 eggs/
 .eggs/
 lib/
@@ -24,6 +25,7 @@ share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+*.sqlite3
 MANIFEST
 
 # PyInstaller

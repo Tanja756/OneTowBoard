@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load category_tags %}
+
+{% block title %}Подать объявление — OneTwoBoard{% endblock %}
+{% block content %}
+<h1>Новое объявление</h1>
+<form method="post" enctype="multipart/form-data" id="listingForm" novalidate>
+  {% csrf_token %}
+  
+  <div class="mb-3">
+    <label for="id_title" class="form-label">Заголовок</label>
+    {{ form.title }}
+    {{ form.title.errors }}
+  </div>
+  <div class="mb-3">
+    <label for="id_description" class="form-label">Описание</label>
+    {{ form.description }}
+    {{ form.description.errors }}
+  </div>
+  <div class="mb-3">
+    <label for="id_price" class="form-label">Цена</label>
+    {{ form.price }}
+    {{ form.price.errors }}
+  </div>
+
+  <!-- Выбор категории из дерева -->
+  <div class="mb-3">
+    <label class="form-label">Категория</label>
+    <input type="hidden" name="category_slug" id="id_category_slug" value="{{ selected_category_slug|default:'' }}">
+    <div class="border p-2" style="max-height: 300px; overflow-y: auto;">
+      {% show_category_tree_select selected_slug=selected_category_slug|default:'' %}
+    </div>
+  </div>
+
+  <!-- Контейнер для динамических параметров -->
+  <div id="parametersContainer"></div>
+
+  <div class="mb-3">
+    <label for="id_images" class="form-label">Фотографии:</label>
+    <input type="file" name="images" id="id_images" multiple accept="image/*" class="form-control">
+  </div>
+
+  <button type="submit" class="btn btn-primary">Опубликовать</button>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const slugInput = document.getElementById('id_category_slug');
+    const container = document.getElementById('parametersContainer');
+
+    async function loadParameters() {
+        const slug = slugInput.value;
+        container.innerHTML = '';  // очищаем
+        if (!slug) return;
+        try {
+            const url = `{% url 'categories:get_parameters' %}?category_slug=${slug}`;
+            const response = await fetch(url);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const data = await response.json();
+            console.log('Получен ответ:', data);  // посмотри в консоли браузера
+            if (!data.html) {
+                alert('Сервер вернул пустой ответ. Проверьте, есть ли параметры у категории "' + slug + '".');
+            }
+            container.innerHTML = data.html;
+        } catch (error) {
+            alert('Ошибка загрузки параметров: ' + error.message);
+            console.error(error);
+        }
+    }
+
+    slugInput.addEventListener('change', loadParameters);
+    if (slugInput.value) {
+        loadParameters();
+    }
+});
+</script>
+{% endblock %}

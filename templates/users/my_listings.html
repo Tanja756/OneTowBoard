@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block title %}Мои объявления — OneTwoBoard{% endblock %}
+{% block content %}
+<h1>Мои объявления</h1>
+{% if listings %}
+    <div class="list-group">
+        {% for listing in listings %}
+            <div class="list-group-item d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                    {% with listing.images.first as img %}
+                        {% if img %}
+                            <img src="{{ img.image.url }}" width="40" height="40" class="rounded me-2" style="object-fit: cover;">
+                        {% endif %}
+                    {% endwith %}
+                    <div>
+                        <a href="{% url 'listings:detail' listing.pk %}" class="text-decoration-none fw-bold">{{ listing.title }}</a>
+                        <div class="small text-muted">{{ listing.created_at|date:"d.m.Y H:i" }}</div>
+                    </div>
+    <div>
+        <a href="...">{{ listing.title }}</a>
+        <div class="small text-muted">
+            {{ listing.created_at|date:"d.m.Y H:i" }}
+            <span class="badge {% if listing.status == 'active' %}bg-success{% elif listing.status == 'moderation' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+                {{ listing.get_status_display }}
+            </span>
+        </div>
+    </div>
+                </div>
+                <div>
+                    <a href="{% url 'listings:edit' listing.pk %}" class="btn btn-sm btn-outline-secondary">✎</a>
+                    <a href="{% url 'listings:delete' listing.pk %}" class="btn btn-sm btn-outline-danger">✕</a>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <p>У вас пока нет объявлений. <a href="{% url 'listings:create' %}">Создать первое</a></p>
+{% endif %}
+{% endblock %}

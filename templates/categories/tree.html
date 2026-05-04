@@ -1,0 +1,71 @@
+<ul class="list-unstyled">
+  {% for category in categories %}
+    <li class="mb-1">
+      <div class="d-flex align-items-center">
+        {% if category.children.exists %}
+          {% if category.slug in expanded_slugs %}
+            <button class="btn btn-sm btn-light p-0 me-1" data-bs-toggle="collapse" 
+                    data-bs-target="#subcat-{{ category.slug }}">
+              <span class="toggle-icon">▼</span>
+            </button>
+          {% else %}
+            <button class="btn btn-sm btn-light p-0 me-1" data-bs-toggle="collapse" 
+                    data-bs-target="#subcat-{{ category.slug }}">
+              <span class="toggle-icon">▶</span>
+            </button>
+          {% endif %}
+        {% else %}
+          <span style="width:20px; display:inline-block;"></span>
+        {% endif %}
+        <a href="{% url 'categories:detail' category.slug %}" 
+           class="text-decoration-none {% if current_category == category %}fw-bold{% endif %}">
+          {{ category.name }}
+        </a>
+      </div>
+      {% if category.children.exists %}
+        <div class="collapse {% if category.slug in expanded_slugs %}show{% endif %} ps-3" id="subcat-{{ category.slug }}">
+          <ul class="list-unstyled">
+            {% for child in category.children.all %}
+              <li>
+                <a href="{% url 'categories:detail' child.slug %}"
+                   class="text-decoration-none {% if current_category == child %}fw-bold{% endif %}">
+                  {{ child.name }}
+                </a>
+              </li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% endif %}
+    </li>
+  {% endfor %}
+</ul>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const toggles = document.querySelectorAll('[data-bs-toggle="collapse"]');
+  toggles.forEach(btn => {
+    btn.addEventListener('click', function() {
+      const targetId = this.getAttribute('data-bs-target');
+      const target = document.querySelector(targetId);
+      const icon = this.querySelector('.toggle-icon');
+      if (target.classList.contains('show')) {
+        icon.textContent = '▶';
+      } else {
+        icon.textContent = '▼';
+        // Закрываем другие открытые подкатегории
+        toggles.forEach(otherBtn => {
+          if (otherBtn !== btn) {
+            const otherTargetId = otherBtn.getAttribute('data-bs-target');
+            const otherTarget = document.querySelector(otherTargetId);
+            if (otherTarget && otherTarget.classList.contains('show')) {
+              const collapseInstance = bootstrap.Collapse.getInstance(otherTarget);
+              if (collapseInstance) collapseInstance.hide();
+              otherBtn.querySelector('.toggle-icon').textContent = '▶';
+            }
+          }
+        });
+      }
+    });
+  });
+});
+</script>
