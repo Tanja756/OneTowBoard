@@ -1,8 +1,9 @@
 {% extends 'base.html' %}
+{% block title %}{{ listing.title }} — {{ site_name }}{% endblock %}
+{% block description %}{{ listing.description|truncatechars:160 }} — цена, фото, контакты продавца на {{ site_name }}{% endblock %}
+
 {% load static %}
 {% load url_helpers %}
-
-{% block title %}{{ listing.title }} — OneTwoBoard{% endblock %}
 
 {% block content %}
 

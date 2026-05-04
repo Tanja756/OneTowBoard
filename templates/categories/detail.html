@@ -1,9 +1,10 @@
 {% extends 'base.html' %}
+{% block title %}{{ category.name }} — {{ site_name }}{% endblock %}
+{% block description %}Объявления в категории «{{ category.name }}» {% if category.parent %}— {{ category.parent.name }}{% endif %}. Фильтры, сортировка, фото, цены.{% endblock %}
+
 {% load static %}
 {% load url_helpers %}
 {% load category_tags %}
-
-{% block title %}{{ category.name }} — OneTwoBoard{% endblock %}
 
 {% block content %}
 

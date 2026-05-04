@@ -1,6 +1,8 @@
 {% extends 'base.html' %}
+{% block title %}Поиск{% if query %}: {{ query }}{% endif %} — {{ site_name }}{% endblock %}
+{% block description %}Результаты поиска{% if query %} по запросу «{{ query }}»{% endif %} на доске объявлений {{ site_name }}.{% endblock %}
+
 {% load url_helpers %}
-{% block title %}Поиск — OneTwoBoard{% endblock %}
 {% block content %}
 
 <h1 class="h5 mb-3">Поиск объявлений</h1>

@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}OneTwoBoard{% endblock %}</title>
+    <meta name="description" content="{% block description %}{{ site_description|default:'Бесплатная доска объявлений' }}{% endblock %}">
+    <meta name="keywords" content="{% block keywords %}{{ site_keywords|default:'доска объявлений, объявления' }}{% endblock %}">
+    <title>{% block title %}Главная — {{ site_name|default:'OneTwoBoard' }}{% endblock %}</title>
     {% load static %}
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'css/style.css' %}">

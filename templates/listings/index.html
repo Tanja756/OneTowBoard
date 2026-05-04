@@ -1,9 +1,10 @@
 {% extends 'base.html' %}
+{% block title %}Главная — {{ site_name }}{% endblock %}
+{% block description %}Последние объявления на доске {{ site_name }}. Бесплатно подать объявление в любую категорию.{% endblock %}
+
 {% load static %}
 {% load category_tags %}
 {% load url_helpers %}
-
-{% block title %}Главная — OneTwoBoard{% endblock %}
 
 {% block content %}
 <div class="row">
