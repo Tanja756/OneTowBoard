@@ -84,7 +84,7 @@ def create_listing_view(request):
             images = request.FILES.getlist('images')
             for img in images:
                 ListingImage.objects.create(listing=listing, image=img)
-            messages.success(request, 'Объявление отправлено на модерацию.')
+            messages.success(request, 'Объявление отправлено на модерацию. Оно появится в ленте после проверки модератором.')
             return redirect('listings:index')
     else:
         form = ListingForm()

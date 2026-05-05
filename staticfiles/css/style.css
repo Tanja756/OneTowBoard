@@ -37,3 +37,11 @@ footer.bg-light {
     border-color: #86b7fe;
     box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
 }
+
+/* Защита от переполнения длинными словами */
+.card-title,
+.fs-3.fw-bold,
+.listing-title {
+    word-wrap: break-word;
+    overflow-wrap: anywhere;
+}

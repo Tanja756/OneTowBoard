@@ -82,6 +82,15 @@ class RegisterForm(UserCreationForm):
             profile.display_name = display_name
             profile.save()
         return user
+    
+    def clean_display_name(self):
+        name = self.cleaned_data.get('display_name', '').strip()
+        if not name:
+            return name
+        # Запрещаем строки, похожие на email или телефон
+        if re.search(r'@', name) or re.search(r'^\s*\+?\d[\d\s\-\(\)]{5,}\s*$', name):
+            raise forms.ValidationError('Отображаемое имя не может быть адресом электронной почты или номером телефона.')
+        return name
 
 
 class ProfileForm(forms.ModelForm):
@@ -111,3 +120,11 @@ class ProfileForm(forms.ModelForm):
             profile.phone = self.cleaned_data['phone']
             profile.save()
         return profile
+
+    def clean_display_name(self):
+        name = self.cleaned_data.get('display_name', '').strip()
+        if not name:
+            return name
+        if re.search(r'@', name) or re.search(r'^\s*\+?\d[\d\s\-\(\)]{5,}\s*$', name):
+            raise forms.ValidationError('Отображаемое имя не может быть адресом электронной почты или номером телефона.')
+        return name
