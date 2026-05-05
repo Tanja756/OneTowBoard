@@ -9,7 +9,7 @@ from .forms import ListingForm
 from categories.models import Category
 
 def index_view(request):
-    listings_list = Listing.objects.filter(status='active') \
+    listings_list = Listing.objects.filter(status='active', is_completed=False) \
         .select_related('author', 'category') \
         .prefetch_related('images') \
         .order_by('-created_at')
@@ -33,6 +33,7 @@ def detail_view(request, pk):
         'listing': listing,
         'images': images,
         'show_contacts': show_contacts,
+        'is_completed': listing.is_completed,   # <-- передаём флаг
     }
     return render(request, 'listings/detail.html', context)
 
@@ -169,3 +170,18 @@ def delete_listing_view(request, pk):
         messages.success(request, 'Объявление удалено.')
         return redirect('listings:index')
     return render(request, 'listings/delete_confirm.html', {'listing': listing})
+
+@login_required
+def complete_listing_view(request, pk):
+    listing = get_object_or_404(Listing, pk=pk)
+    if listing.author != request.user and not request.user.is_staff:
+        messages.error(request, 'У вас нет прав на завершение этого объявления.')
+        return redirect('listings:detail', pk=pk)
+
+    if request.method == 'POST':
+        listing.is_completed = True
+        listing.save()
+        messages.success(request, 'Объявление завершено.')
+        return redirect('users:my_listings')
+
+    return render(request, 'listings/complete_confirm.html', {'listing': listing})

@@ -31,8 +31,8 @@ class ListingImageInline(admin.TabularInline):
 
 @admin.register(Listing)
 class ListingAdmin(admin.ModelAdmin):
-    list_display = ('title', 'author', 'category', 'price', 'status', 'created_at')
-    list_filter = ('status', 'category', 'created_at')
+    list_display = ('title', 'author', 'category', 'price', 'status', 'is_completed', 'created_at')
+    list_filter = ('status', 'category', 'is_completed', 'created_at')
     search_fields = ('title', 'description', 'author__username')
     list_editable = ('status',)
     date_hierarchy = 'created_at'

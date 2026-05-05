@@ -38,7 +38,7 @@ def detail_view(request, slug):
     # Получаем ID текущей категории и всех её потомков
     category_ids = category.get_descendants_ids(include_self=True)
 
-    listings = Listing.objects.filter(category_id__in=category_ids, status='active')
+    listings = Listing.objects.filter(category_id__in=category_ids, status='active', is_completed=False)
 
     # Фильтры цены
     price_from = request.GET.get('price_from')

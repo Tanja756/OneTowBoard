@@ -5,7 +5,7 @@ from listings.models import Listing
 
 def search_view(request):
     query = request.GET.get('q', '')
-    results = Listing.objects.filter(status='active')
+    results = Listing.objects.filter(status='active', is_completed=False)
     if query:
         results = results.filter(
             Q(title__icontains=query) | Q(description__icontains=query)

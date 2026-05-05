@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from .forms import RegisterForm, UserLoginForm
+from .forms import RegisterForm, UserLoginForm, ProfileForm
 from listings.models import Listing
 
 def register_view(request):
@@ -46,23 +46,42 @@ def logout_view(request):
 @login_required
 def profile_view(request):
     if request.method == 'POST':
-        user = request.user
-        user.email = request.POST.get('email', user.email)
-        user.save()
-        user.profile.phone = request.POST.get('phone', '')
-        user.profile.city = request.POST.get('city', '')
-        user.profile.profile_type = request.POST.get('profile_type', 'person')
-        display_name = request.POST.get('display_name', '').strip()
-        if not display_name:
-            display_name = user.username
-        user.profile.display_name = display_name
-        avatar = request.FILES.get('avatar')
-        if avatar:
-            user.profile.avatar = avatar
-        user.profile.save()
-        messages.success(request, 'Профиль обновлён.')
-        return redirect('users:profile')
-    return render(request, 'users/profile.html')
+        form = ProfileForm(request.POST, request.FILES, instance=request.user.profile)
+        # Ручная валидация email и телефона
+        email = request.POST.get('email', '').strip()
+        phone_raw = request.POST.get('phone', '')
+        digits = ''.join(filter(str.isdigit, phone_raw))
+        phone_valid = len(digits) == 11 and digits[0] == '7'
+
+        if not email:
+            form.add_error(None, 'Email обязателен.')
+        if not phone_valid:
+            form.add_error(None, 'Введите корректный номер телефона (+7 (999) 999-99-99).')
+
+        if form.is_valid() and email and phone_valid:
+            user = request.user
+            user.email = email
+            user.save()
+            profile = form.save(commit=False)
+            profile.phone = digits
+            profile.save()
+            messages.success(request, 'Профиль обновлён.')
+            return redirect('users:profile')
+        else:
+            # Передаём телефон и email в шаблон, чтобы сохранить введённые значения
+            return render(request, 'users/profile.html', {
+                'form': form,
+                'email_value': email,
+                'phone_value': phone_raw,
+            })
+    else:
+        form = ProfileForm(instance=request.user.profile)
+        phone_formatted = request.user.profile.get_formatted_phone()
+        return render(request, 'users/profile.html', {
+            'form': form,
+            'email_value': request.user.email,
+            'phone_value': phone_formatted if phone_formatted else '',
+        })
 
 @login_required
 def my_listings_view(request):

@@ -16,10 +16,12 @@
                         <a href="{% url 'listings:detail' listing.pk %}" class="text-decoration-none fw-bold">{{ listing.title }}</a>
                         <div class="small text-muted">
                             {{ listing.created_at|date:"d.m.Y H:i" }}
-                            <span class="badge {% if listing.status == 'active' %}bg-success{% elif listing.status == 'moderation' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
-                                {{ listing.get_status_display }}
-                            </span>
-                            {% if listing.category %}
+<span class="badge {% if listing.status == 'active' %}bg-success{% elif listing.status == 'moderation' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+    {{ listing.get_status_display }}
+</span>
+{% if listing.is_completed %}
+    <span class="badge bg-info">Завершено</span>
+{% endif %}                            {% if listing.category %}
                                 в <a href="{% url 'categories:detail' listing.category.slug %}">{{ listing.category.name }}</a>
                             {% endif %}
                         </div>

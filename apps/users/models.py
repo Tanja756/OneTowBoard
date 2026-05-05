@@ -3,6 +3,9 @@ from django.contrib.auth.models import User
 from django.dispatch import receiver
 from django.db.models.signals import post_save
 from apps.utils import avatar_upload_to
+from django.db.models.signals import pre_save
+from django.dispatch import receiver
+from apps.utils import compress_uploaded_image
 
 class Profile(models.Model):
     USER_TYPE_CHOICES = (
@@ -25,6 +28,27 @@ class Profile(models.Model):
             return self.display_name.strip()
         return self.user.username
 
+    def get_formatted_phone(self):
+        """Возвращает телефон в формате +7 (XXX) XXX-XX-XX, если это возможно."""
+        digits = ''.join(filter(str.isdigit, self.phone or ''))
+        if len(digits) == 11 and digits[0] == '7':
+            return f"+7 ({digits[1:4]}) {digits[4:7]}-{digits[7:9]}-{digits[9:11]}"
+        return self.phone
+
+
+    def save(self, *args, **kwargs):
+        if self.pk is not None:
+            try:
+                old_instance = Profile.objects.get(pk=self.pk)
+                if old_instance.avatar != self.avatar and self.avatar:
+                    compress_uploaded_image(self.avatar, max_dim=850)
+            except Profile.DoesNotExist:
+                pass
+        else:
+            if self.avatar:
+                compress_uploaded_image(self.avatar, max_dim=850)
+        super().save(*args, **kwargs)
+ 
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
     if created:

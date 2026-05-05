@@ -2,6 +2,9 @@ from django.db import models
 from django.contrib.auth.models import User
 from categories.models import Category
 from apps.utils import listing_image_upload_to
+from django.db.models.signals import pre_save
+from django.dispatch import receiver
+from apps.utils import compress_uploaded_image
 
 class Listing(models.Model):
     STATUS_CHOICES = (
@@ -19,6 +22,7 @@ class Listing(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     is_promoted = models.BooleanField(default=False, verbose_name='Продвижение')
     parameters = models.JSONField(default=dict, blank=True, verbose_name='Параметры')
+    is_completed = models.BooleanField(default=False, verbose_name='Завершено')
     class Meta:
         ordering = ['-created_at']
         verbose_name = 'Объявление'
@@ -34,3 +38,16 @@ class ListingImage(models.Model):
 
     def __str__(self):
         return f'Фото для {self.listing.title}'
+
+    def save(self, *args, **kwargs):
+        # При создании нового объекта или если изображение изменилось — сжимаем
+        if self.pk is None:
+            try:
+                old_instance = ListingImage.objects.get(pk=self.pk)
+                if old_instance.image != self.image:
+                    compress_uploaded_image(self.image)
+            except ListingImage.DoesNotExist:
+                compress_uploaded_image(self.image)
+        else:
+            compress_uploaded_image(self.image)
+        super().save(*args, **kwargs)

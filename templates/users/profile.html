@@ -38,37 +38,51 @@
             <form method="post" enctype="multipart/form-data" novalidate>
               {% csrf_token %}
 
+              {% if form.non_field_errors %}
+                <div class="alert alert-danger">
+                  {% for error in form.non_field_errors %}
+                    {{ error }}
+                  {% endfor %}
+                </div>
+              {% endif %}
+
               <div class="mb-3">
                 <label class="form-label">Отображаемое имя</label>
-                <input type="text" name="display_name" value="{{ user.profile.display_name }}" class="form-control" placeholder="Как вас показывать?">
-                <div class="form-text">Оставьте пустым, чтобы использовать логин</div>
+                {{ form.display_name }}
+                {{ form.display_name.errors }}
               </div>
 
               <div class="mb-3">
                 <label class="form-label">Email</label>
-                <input type="email" name="email" value="{{ user.email }}" class="form-control" placeholder="Введите email">
+                <input type="email" name="email" value="{{ email_value|default:'' }}" class="form-control">
+                {% if form.non_field_errors %}
+                  <!-- Ошибки email выводятся в non_field_errors, так что тут отдельно не нужно -->
+                {% endif %}
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">Телефон *</label>
+                <input type="text" name="phone" id="id_phone" value="{{ phone_value|default:'' }}"
+                       class="form-control"
+                       data-inputmask="'mask': '+7 (999) 999-99-99'">
+                <div class="text-danger small">{{ form.non_field_errors.1 }}</div>
+                {% if not user.profile.phone or user.profile.phone == '0000000000' %}
+                  <div class="alert alert-warning mt-1">Пожалуйста, укажите ваш номер телефона. Это обязательно.</div>
+                {% endif %}
               </div>
 
               <div class="row g-3">
                 <div class="col-md-6">
-                  <label class="form-label">Телефон</label>
-                  <input type="text" name="phone" value="{{ user.profile.phone }}" class="form-control" placeholder="Номер телефона">
+                  <label class="form-label">Город</label>
+                  {{ form.city }}
                 </div>
                 <div class="col-md-6">
-                  <label class="form-label">Город</label>
-                  <input type="text" name="city" value="{{ user.profile.city }}" class="form-control" placeholder="Ваш город">
+                  <label class="form-label">Тип профиля</label>
+                  {{ form.profile_type }}
                 </div>
               </div>
 
               <div class="mb-3 mt-3">
-                <label class="form-label">Тип профиля</label>
-                <select name="profile_type" class="form-select">
-                  <option value="person" {% if user.profile.profile_type == 'person' %}selected{% endif %}>Частное лицо</option>
-                  <option value="company" {% if user.profile.profile_type == 'company' %}selected{% endif %}>Компания</option>
-                </select>
-              </div>
-
-              <div class="mb-3">
                 <label class="form-label">Аватар</label>
                 {% if user.profile.avatar %}
                   <div class="mb-2">
@@ -76,8 +90,7 @@
                     <span class="text-muted small ms-2">текущий</span>
                   </div>
                 {% endif %}
-                <input type="file" name="avatar" class="form-control">
-                <div class="form-text">Загрузите новое изображение, чтобы сменить аватар</div>
+                {{ form.avatar }}
               </div>
 
               <button type="submit" class="btn btn-primary w-100">Сохранить изменения</button>
@@ -88,4 +101,22 @@
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/inputmask@5/dist/inputmask.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var phoneMask = new Inputmask({
+        mask: '+7 (999) 999-99-99',
+        showMaskOnHover: false,
+        showMaskOnFocus: true,
+        placeholder: '_',
+        autoUnmask: false,
+        removeMaskOnSubmit: false,
+        greedy: false
+    });
+    phoneMask.mask(document.getElementById('id_phone'));
+});
+</script>
 {% endblock %}

@@ -60,23 +60,28 @@
       <p>{{ listing.description|linebreaks }}</p>
     </div>
 
-    {% if user == listing.author or user.is_staff %}
-      <div class="mt-3">
+{% if user == listing.author or user.is_staff %}
+    <div class="mt-3">
         <a href="{% url 'listings:edit' listing.pk %}" class="btn btn-outline-secondary btn-sm">✎ Редактировать</a>
         <a href="{% url 'listings:delete' listing.pk %}" class="btn btn-outline-danger btn-sm">✕ Удалить</a>
-      </div>
-    {% endif %}
+        {% if not listing.is_completed %}
+            <a href="{% url 'listings:complete' listing.pk %}" class="btn btn-outline-success btn-sm">✔ Завершить</a>
+        {% endif %}
+    </div>
+{% endif %}
   </div>
 
   <!-- Правая колонка: цена и контакты -->
   <div class="col-lg-4">
     <!-- Цена (над карточкой продавца) -->
-{% if listing.price %}
-  <div class="mb-3">
-    <span class="fs-3 fw-bold text-success">{{ listing.price|price_display }} ₽</span>
-  </div>
+{% if is_completed %}
+    <div class="alert alert-info mb-2">Это объявление завершено.</div>
 {% endif %}
-
+{% if listing.price %}
+    <div class="mb-3">
+        <span class="fs-3 fw-bold text-success">{{ listing.price|price_display }} ₽</span>
+    </div>
+{% endif %}
     {% if show_contacts %}
       <!-- Карточка продавца -->
       <div class="card mb-3 shadow-sm">
@@ -89,25 +94,28 @@
               {% else %}
                 <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center"
                      style="width:48px; height:48px; font-size:1.2rem;">
-                  {{ listing.author.username|slice:":1"|upper }}
+                  {{ listing.author.profile.get_display_name|slice:":1"|upper }}
                 </div>
               {% endif %}
             </div>
-            <div>
-              <strong>{{ listing.author.profile.get_display_name  }}</strong>
-              <div class="small text-muted">
-                {% if listing.author.profile.profile_type == 'company' %}Компания{% else %}Частное лицо{% endif %}
-              </div>
-            </div>
+<div>
+    <strong>{{ listing.author.profile.get_display_name }}</strong>
+    <div class="small text-muted">
+        {% if listing.author.profile.profile_type == 'company' %}Компания{% else %}Частное лицо{% endif %}
+    </div>
+    {% if listing.author.profile.city %}
+        <div class="small text-muted">{{ listing.author.profile.city }}</div>
+    {% endif %}
+</div>
           </div>
 
           {% if listing.author.profile.phone %}
             <button id="showPhoneBtn" class="btn btn-success w-100 mb-2" onclick="showPhone()">
               📞 Показать телефон
             </button>
-            <p id="phoneNumber" class="fw-bold text-success mb-2" style="display: none;">
-              {{ listing.author.profile.phone }}
-            </p>
+<p id="phoneNumber" class="fw-bold text-success mb-2" style="display: none;">
+    {{ listing.author.profile.get_formatted_phone }}
+</p>
           {% else %}
             <p class="text-muted small">Телефон не указан</p>
           {% endif %}
