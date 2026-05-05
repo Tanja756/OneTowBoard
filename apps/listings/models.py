@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from categories.models import Category
+from apps.utils import listing_image_upload_to
 
 class Listing(models.Model):
     STATUS_CHOICES = (
@@ -28,7 +29,7 @@ class Listing(models.Model):
 
 class ListingImage(models.Model):
     listing = models.ForeignKey(Listing, on_delete=models.CASCADE, related_name='images')
-    image = models.ImageField(upload_to='listings/', verbose_name='Изображение')
+    image = models.ImageField(upload_to=listing_image_upload_to, verbose_name='Изображение')
     is_main = models.BooleanField(default=False, verbose_name='Главное')
 
     def __str__(self):

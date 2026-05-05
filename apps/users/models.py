@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.dispatch import receiver
 from django.db.models.signals import post_save
+from apps.utils import avatar_upload_to
 
 class Profile(models.Model):
     USER_TYPE_CHOICES = (
@@ -11,7 +12,7 @@ class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     phone = models.CharField(max_length=20, blank=True, verbose_name='Телефон')
     city = models.CharField(max_length=100, blank=True, verbose_name='Город')
-    avatar = models.ImageField(upload_to='avatars/', blank=True, null=True, verbose_name='Аватар')
+    avatar = models.ImageField(upload_to=avatar_upload_to, blank=True, null=True, verbose_name='Аватар')
     profile_type = models.CharField(max_length=10, choices=USER_TYPE_CHOICES, default='person', verbose_name='Тип профиля')
     display_name = models.CharField(max_length=100, blank=True, verbose_name='Отображаемое имя')
 
