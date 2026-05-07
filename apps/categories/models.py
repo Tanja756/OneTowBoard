@@ -6,6 +6,16 @@ class Category(models.Model):
     slug = models.SlugField(max_length=100, unique=True, verbose_name='URL-идентификатор')
     parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='children')
     image = models.ImageField(upload_to=category_image_upload_to, blank=True, null=True, verbose_name='Изображение категории')
+    VIEW_CHOICES = (
+        ('grid', 'Плитки'),
+        ('list', 'Список'),
+    )
+    default_view = models.CharField(max_length=10, choices=VIEW_CHOICES, default='grid', verbose_name='Вид по умолчанию')
+    VIEW_MODE_CHOICES = (
+        ('grid', 'Плитки'),
+        ('list', 'Список'),
+    )
+    view_mode = models.CharField(max_length=4, choices=VIEW_MODE_CHOICES, default='grid', verbose_name='Вид по умолчанию')
 
     class Meta:
         verbose_name = 'Категория'

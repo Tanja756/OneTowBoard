@@ -4,13 +4,24 @@ from django.db.models.functions import Lower
 from django.shortcuts import render
 from datetime import date
 from listings.models import Listing
-
+from categories.models import Category
 
 def search_view(request):
     query = request.GET.get('q', '')
     results = Listing.objects.filter(status='active', is_completed=False).filter(
         Q(expiry_date__isnull=True) | Q(expiry_date__gte=date.today())
     )
+
+    # Фильтрация по выбранной категории (если есть)
+    category_slug = request.GET.get('category')
+    if category_slug:
+        try:
+            cat = Category.objects.get(slug=category_slug)
+            # Получаем id самой категории и всех потомков
+            cat_ids = cat.get_descendants_ids(include_self=True)
+            results = results.filter(category_id__in=cat_ids)
+        except Category.DoesNotExist:
+            pass  # если категория не найдена, просто игнорируем
 
     if query:
         # Приводим и поле, и запрос к нижнему регистру для полной независимости от регистра

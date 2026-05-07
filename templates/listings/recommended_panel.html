@@ -2,7 +2,7 @@
 {% if recommended %}
 <div class="card mt-3">
   <div class="card-body">
-    <h6 class="card-title">Рекомендуемые</h6>
+    <h6 class="card-title fw-bold">Рекомендуемые</h6>
     {% for item in recommended %}
     <div class="d-flex align-items-start mb-2">
       {% with item.images.first as img %}

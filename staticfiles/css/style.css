@@ -59,3 +59,51 @@ footer.bg-light {
 .recommended-item:hover {
     background-color: #f8f9fa;
 }
+/* Единая поисковая строка */
+.search-wrapper {
+    display: flex;
+    align-items: stretch;
+    border: 2px solid #0d6efd;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+.search-wrapper:focus-within {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+.search-wrapper .form-control,
+.search-wrapper .form-select,
+.search-wrapper .btn {
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+}
+.search-wrapper .form-select {
+    max-width: 180px;
+    border-left: 1px solid #dee2e6;   /* тонкий разделитель */
+}
+.search-wrapper .btn {
+    border-left: 1px solid #dee2e6;
+}
+.card-urgent-badge {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    z-index: 2;
+    font-size: 0.75rem;
+}
+.list-view .listing-item {
+    display: block;
+}
+/* Убираем лишние отступы у карточки в списке */
+.list-view .listing-item .card-body {
+    padding: 0.75rem !important;
+}
+
+/* Прижимаем правую колонку и делаем цену крупнее */
+.list-view .text-end {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}

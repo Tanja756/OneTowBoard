@@ -9,9 +9,8 @@ from listings.models import Listing
 
 
 def list_view(request):
-    categories = Category.objects.all()
+    categories = Category.objects.filter(parent__isnull=True)  # только корневые
     return render(request, 'categories/list.html', {'categories': categories})
-
 
 def get_parameters_ajax(request):
     """Возвращает HTML с полями для параметров выбранной категории."""
@@ -42,6 +41,9 @@ def detail_view(request, slug):
     category = get_object_or_404(Category, slug=slug)
     # Получаем ID текущей категории и всех её потомков
     category_ids = category.get_descendants_ids(include_self=True)
+    category = get_object_or_404(Category, slug=slug)
+    
+    view_mode = request.GET.get('view', category.view_mode if category.view_mode else 'grid')
 
     # Базовый queryset с фильтрацией по сроку и незавершённости
     listings = Listing.objects.filter(
@@ -100,6 +102,7 @@ def detail_view(request, slug):
 
     return render(request, 'categories/detail.html', {
         'category': category,
+        'view_mode': view_mode,
         'page_obj': page_obj,
         'sort': sort,
         'price_from': price_from or '',

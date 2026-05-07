@@ -11,6 +11,12 @@ from categories.models import Category
 from datetime import date, timedelta
 
 def index_view(request):
+    view_mode = request.GET.get('view')
+    if view_mode:
+        request.session['view_mode'] = view_mode
+    else:
+        view_mode = request.session.get('view_mode', 'grid')
+
     listings_list = Listing.objects.filter(
         status='active', is_completed=False
     ).filter(
@@ -19,7 +25,10 @@ def index_view(request):
     paginator = Paginator(listings_list, 24)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
-    return render(request, 'listings/index.html', {'page_obj': page_obj})
+    return render(request, 'listings/index.html', {
+        'page_obj': page_obj,
+        'view_mode': view_mode,
+    })
 
 
 def detail_view(request, pk):

@@ -54,3 +54,18 @@ def days_until(expiry_date):
         return f'Осталось {delta} дн.'
     else:
         return 'Истекло'
+
+@register.filter
+def short_date(d):
+    if not d:
+        return ''
+    today = date.today()
+    delta = (today - d.date()).days
+    if delta == 0:
+        return 'Сегодня'
+    elif delta == 1:
+        return 'Вчера'
+    elif 2 <= delta <= 4:
+        return f'{delta} дня назад'
+    else:
+        return f'{delta} дней назад'
