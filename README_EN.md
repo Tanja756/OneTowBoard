@@ -3,6 +3,9 @@
 A modern classifieds board with moderation, hierarchical categories, dynamic parameters and a responsive interface.  
 The project is fully ready for deployment in Docker with HTTPS via Nginx.
 
+### Демо
+https://gripol.online
+
 ## Tech Stack
 
 - **Python 3.13+**
