@@ -1,0 +1,1 @@
+0 0 * * * cd /app && python manage.py expire_listings >> /var/log/onetwoboard_expire.log 2>&1

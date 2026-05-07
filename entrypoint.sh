@@ -1,6 +1,10 @@
 #!/bin/sh
 set -e
 
+echo "=== Настройка cron ==="
+crontab /app/crontab.txt
+service cron start
+
 echo "=== Применяем миграции ==="
 python manage.py migrate --noinput
 
