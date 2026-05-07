@@ -5,6 +5,7 @@ from apps.utils import listing_image_upload_to
 from django.db.models.signals import pre_save
 from django.dispatch import receiver
 from apps.utils import compress_uploaded_image
+from datetime import date
 
 class Listing(models.Model):
     STATUS_CHOICES = (
@@ -23,6 +24,36 @@ class Listing(models.Model):
     is_promoted = models.BooleanField(default=False, verbose_name='Продвижение')
     parameters = models.JSONField(default=dict, blank=True, verbose_name='Параметры')
     is_completed = models.BooleanField(default=False, verbose_name='Завершено')
+    expiry_date = models.DateField(blank=True, null=True, verbose_name='Активно до')
+    total_views = models.PositiveIntegerField(default=0, verbose_name='Просмотров всего')
+    today_views = models.PositiveIntegerField(default=0, verbose_name='Просмотров сегодня')
+    last_view_date = models.DateField(blank=True, null=True, verbose_name='Последний просмотр')
+
+    def increment_views(self, request):
+        """Увеличивает счётчики просмотров, если пользователь авторизован и ещё не смотрел сегодня."""
+        if not request.user.is_authenticated:
+            return
+    
+        today = date.today()
+        # Проверяем, есть ли уже запись за сегодня от этого пользователя
+        already_viewed = self.view_logs.filter(
+            user=request.user,
+            viewed_at__date=today
+        ).exists()
+    
+        if not already_viewed:
+            # Сбрасываем today_views, если день сменился (на случай, если кто-то первый за день)
+            if self.last_view_date != today:
+                self.today_views = 1
+                self.last_view_date = today
+            else:
+                self.today_views += 1
+            self.total_views += 1
+            self.save(update_fields=['today_views', 'total_views', 'last_view_date'])
+    
+            # Фиксируем просмотр
+            self.view_logs.create(user=request.user)
+
     class Meta:
         ordering = ['-created_at']
         verbose_name = 'Объявление'
@@ -51,3 +82,16 @@ class ListingImage(models.Model):
         else:
             compress_uploaded_image(self.image)
         super().save(*args, **kwargs)
+
+class ViewLog(models.Model):
+    listing = models.ForeignKey(Listing, on_delete=models.CASCADE, related_name='view_logs')
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    viewed_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['listing', 'user', 'viewed_at']),
+        ]
+
+    def __str__(self):
+        return f'{self.user.username} посмотрел {self.listing.title}'

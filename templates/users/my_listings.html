@@ -1,4 +1,6 @@
 {% extends 'base.html' %}
+{% load url_helpers %}
+{% load static %}
 {% block title %}Мои объявления — {{ site_name }}{% endblock %}
 {% block content %}
 <h1>Мои объявления</h1>
@@ -21,7 +23,11 @@
 </span>
 {% if listing.is_completed %}
     <span class="badge bg-info">Завершено</span>
-{% endif %}                            {% if listing.category %}
+{% endif %}
+{% if not listing.is_completed and listing.expiry_date %}
+    <span class="badge bg-light text-dark">{{ listing.expiry_date|days_until }}</span>
+{% endif %}
+                            {% if listing.category %}
                                 в <a href="{% url 'categories:detail' listing.category.slug %}">{{ listing.category.name }}</a>
                             {% endif %}
                         </div>

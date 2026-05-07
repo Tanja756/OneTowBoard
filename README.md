@@ -18,6 +18,7 @@
 ### Пользователи
 - Регистрация с выбором типа аккаунта: **Частное лицо** / **Компания**
 - Отображаемое имя (если не задано, используется логин)
+- **Смена пароля** через личный кабинет
 - Личный кабинет: настройки профиля, аватар, контакты, смена типа аккаунта
 - Раздел «Мои объявления» с управлением (редактирование, удаление, завершение)
 - **Обязательный телефон** с маской ввода `+7 (999) 999-99-99` (валидация на сервере)
@@ -25,9 +26,11 @@
 ### Объявления
 - Подача с загрузкой нескольких фото (главное изображение определяется автоматически)
 - Модерация: новое объявление получает статус «На модерации», видно только автору и администратору; после одобрения становится доступно всем
+- **Срок действия**: пользователь выбирает длительность (1 сутки, 1 неделя, 2 недели, 1 месяц, по умолчанию 1 месяц); после истечения срока объявление автоматически завершается (через cron‑команду)
 - Динамические параметры, зависящие от выбранной категории (через AJAX)
 - Обязательное заполнение параметров категории перед публикацией
-- Детальная страница: галерея с модальным слайдером (листание мышью и клавиатурой), цена, контакты (телефон скрыт до нажатия «Показать телефон»), город автора
+- Детальная страница: галерея с модальным слайдером (листание мышью и клавиатурой), цена, просмотры, контакты (телефон скрыт до нажатия «Показать телефон»), город автора
+- **Подсчёт просмотров**: уникальный авторизованный пользователь считается один раз в день (анонимы не учитываются)
 - Редактирование и удаление объявлений автором или администратором
 - При редактировании можно удалять ранее загруженные фото и добавлять новые
 - **Завершение объявления**: автор может пометить объявление как завершённое; оно скрывается из общих списков, но доступно по прямой ссылке и остаётся в личном кабинете
@@ -50,6 +53,7 @@
 - Сортировка: по дате (новые/старые) и по цене (дешёвые/дорогие)
 - Компактные выпадающие панели для фильтров в стиле dns-shop
 - Пагинация с сохранением параметров фильтра и сортировки
+- Просроченные объявления исключаются из выдачи автоматически
 
 ### Интерфейс
 - Полностью адаптивный дизайн на Bootstrap 5
@@ -58,11 +62,13 @@
 - Модальное окно для просмотра фото с возможностью листания
 - Мобильная версия с оптимизированной шапкой (кнопка «Новое объявление» по центру)
 - Кастомизированный фон и читаемые карточки
+- При создании объявления категория и основные поля располагаются слева и справа на больших экранах
 
 ### SEO
 - Уникальные заголовки и мета-описания для всех страниц
 - Название доски, описание и ключевые слова задаются в настройках и используются в шаблонах
 - Человеко-понятные URL (slug для категорий)
+- Файл `favicon.ico` подключается из статики
 
 ### Административная панель
 - Управление категориями, параметрами, объявлениями, изображениями, пользователями
@@ -78,79 +84,91 @@
 
 ## Быстрый старт (локально)
 
-bash
-git clone https://github.com/Tanja756/OneTowBoard.git
-cd OneTowBoard
-python3 -m venv venv
-source venv/bin/activate      # Windows: venv\Scripts\activate
-pip install -r requirements.txt
-python3 manage.py migrate
-python3 manage.py createsuperuser
-python3 manage.py runserver
+    bash
+    git clone https://github.com/Tanja756/OneTowBoard.git
+    cd OneTowBoard
+    python3 -m venv venv
+    source venv/bin/activate      # Windows: venv\Scripts\activate
+    pip install -r requirements.txt
+    python3 manage.py migrate
+    python3 manage.py createsuperuser
+    python3 manage.py runserver
 
-Откройте в браузере:
-    Основной сайт: http://127.0.0.1:8000
-    Панель администратора: http://127.0.0.1:8000/admin/
+    Откройте в браузере:
+        Основной сайт: http://127.0.0.1:8000
+        Панель администратора: http://127.0.0.1:8000/admin/
 
 ### Запуск в Docker (продакшен)
-docker build -t onetwoboard .
-docker run -d \
-    --name onetwoboard \
-    -p 8000:8000 \
-    -v /путь/к/db:/app/db \
-    -v /путь/к/media:/app/media \
-    -v /путь/к/static:/app/staticfiles \
-    --env-file .env \
-    onetwoboard
-docker exec -it onetwoboard python manage.py createsuperuser
+    docker build -t onetwoboard .
+    docker run -d \
+        --name onetwoboard \
+        -p 8000:8000 \
+        -v /путь/к/db:/app/db \
+        -v /путь/к/media:/app/media \
+        -v /путь/к/static:/app/staticfiles \
+        --env-file .env \
+        onetwoboard
+    docker exec -it onetwoboard python manage.py createsuperuser
 
 ### Настройка Nginx (пример для HTTPS)
-server {
-    listen 80;
-    server_name ваш-домен.ru;
-    return 301 https://$host$request_uri;
-}
-
-server {
-    listen 443 ssl;
-    server_name ваш-домен.ru;
-
-    ssl_certificate /etc/letsencrypt/live/ваш-домен.ru/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/ваш-домен.ru/privkey.pem;
-
-    client_max_body_size 20M;
-
-    location /static/ {
-        alias /путь/к/static/;
-        expires 30d;
-        add_header Cache-Control "public";
+    server {
+        listen 80;
+        server_name ваш-домен.ru;
+        return 301 https://$host$request_uri;
     }
-
-    location /media/ {
-        alias /путь/к/media/;
-        expires 30d;
-        add_header Cache-Control "public";
+    
+    server {
+        listen 443 ssl;
+        server_name ваш-домен.ru;
+    
+        ssl_certificate /etc/letsencrypt/live/ваш-домен.ru/fullchain.pem;
+        ssl_certificate_key /etc/letsencrypt/live/ваш-домен.ru/privkey.pem;
+    
+        client_max_body_size 20M;
+    
+        location /static/ {
+            alias /путь/к/static/;
+            expires 30d;
+            add_header Cache-Control "public";
+        }
+    
+        location /media/ {
+            alias /путь/к/media/;
+            expires 30d;
+            add_header Cache-Control "public";
+        }
+    
+        location / {
+            proxy_pass http://127.0.0.1:8000;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
     }
-
-    location / {
-        proxy_pass http://127.0.0.1:8000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-}
 
 ### Переменные окружения (.env)
-DJANGO_SECRET_KEY=ваш-надёжный-секретный-ключ
-DJANGO_DEBUG=False
-DJANGO_ALLOWED_HOSTS=ваш-домен.ru,www.ваш-домен.ru
-DJANGO_CSRF_TRUSTED_ORIGINS=https://ваш-домен.ru,https://www.ваш-домен.ru
+    DJANGO_SECRET_KEY=ваш-надёжный-секретный-ключ
+    DJANGO_DEBUG=False
+    DJANGO_ALLOWED_HOSTS=ваш-домен.ru,www.ваш-домен.ru
+    DJANGO_CSRF_TRUSTED_ORIGINS=https://ваш-домен.ru,https://www.ваш-домен.ru
 
+### Настройка cron для автоматического завершения просроченных объявлений
+    Для периодической проверки истёкших сроков добавьте запись в crontab (на хосте или внутри контейнера).
+    Пример для ежедневного запуска в 03:00 (путь к python и проекту подставьте свои):
+    0 3 * * * cd /путь/к/проекту && /путь/к/venv/bin/python manage.py expire_listings >> /var/log/onetwoboard_expire.log 2>&1
+
+### Как начать пользоваться
+    После запуска и создания суперпользователя зайдите в админку.
+    Добавьте несколько категорий (например, «Недвижимость», «Транспорт», «Электроника»). При необходимости создайте подкатегории.
+    Для категорий, где нужны дополнительные параметры, добавьте их через админку (например, «Тип сделки» с вариантами «Куплю, Продам, Сниму»).
+    Зарегистрируйте обычного пользователя на сайте и попробуйте подать объявление — при выборе конечной категории автоматически появятся поля её параметров.
+    После отправки объявление появится в личном кабинете автора со статусом «На модерации». Администратор может одобрить его через админку.
+    Настройте cron для автоматического завершения просроченных объявлений (см. выше).
 
 ### Дальнейшие планы
-    - Избранное (закладки)
-    - Личные сообщения между продавцами и покупателями
-    - Рейтинги и отзывы
-    - Уведомления по email
-    - Полнотекстовый поиск (при переходе на PostgreSQL)
+    Избранное (закладки)
+    Личные сообщения между продавцами и покупателями
+    Рейтинги и отзывы
+    Уведомления по email
+    Полнотекстовый поиск (при переходе на PostgreSQL)

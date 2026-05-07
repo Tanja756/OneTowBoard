@@ -54,7 +54,11 @@
         <div class="alert alert-warning">Статус: {{ listing.get_status_display }}</div>
       {% endif %}
       <p class="text-muted small">Категория: {{ listing.category.name|default:"Без категории" }}</p>
-      <p class="text-muted small">Опубликовано: {{ listing.created_at|date:"d.m.Y H:i" }}</p>
+<p class="text-muted small">Опубликовано: {{ listing.created_at|date:"d.m.Y H:i" }}</p>
+{% if listing.expiry_date %}
+    <p class="text-muted small">Активно до: {{ listing.expiry_date|date:"d.m.Y" }}</p>
+{% endif %}
+<p class="text-muted small">Просмотров сегодня: {{ listing.today_views }}, всего: {{ listing.total_views }}</p>
       <hr>
       <h2 class="h6">Описание</h2>
       <p>{{ listing.description|linebreaks }}</p>

@@ -1,6 +1,7 @@
 from django import template
 from urllib.parse import urlencode
 from decimal import Decimal
+from datetime import date
 
 register = template.Library()
 
@@ -42,3 +43,14 @@ def price_display(value):
     # Форматируем с пробелами
     result = '{:,}'.format(int_value).replace(',', ' ')
     return result
+
+@register.filter
+def days_until(expiry_date):
+    """Возвращает срок действия объявления: 'Осталось N дн.' или 'Истекло'."""
+    if not expiry_date:
+        return ''
+    delta = (expiry_date - date.today()).days
+    if delta > 0:
+        return f'Осталось {delta} дн.'
+    else:
+        return 'Истекло'
