@@ -24,7 +24,19 @@
   <div class="col-lg-8">
     <!-- Галерея -->
 {% if images %}
-    <img id="mainImage" src="{{ images.0.image.url }}" class="img-fluid rounded" alt="{{ listing.title }}" style="width: 100%; max-height: 560px; object-fit: contain; background: #f8f8f8; cursor: pointer;">
+  <div class="mb-3">
+    <img id="mainImage" src="{{ images.0.image.url }}" class="img-fluid rounded" alt="{{ listing.title }}"
+         style="width: 100%; max-height: 560px; object-fit: contain; background: #f8f8f8; cursor: pointer;">
+  </div>
+  {% if images|length > 1 %}
+    <div class="d-flex gap-1 overflow-auto" id="galleryThumbs">
+      {% for img in images %}
+        <img src="{{ img.image.url }}" class="rounded gallery-thumb {% if forloop.first %}border border-primary{% endif %}"
+             width="80" height="80" style="object-fit: cover; cursor: pointer;"
+             data-full="{{ img.image.url }}" data-index="{{ forloop.counter0 }}">
+      {% endfor %}
+    </div>
+  {% endif %}
 {% else %}
     {% get_category_image listing.category as cat_image %}
     {% if cat_image %}
