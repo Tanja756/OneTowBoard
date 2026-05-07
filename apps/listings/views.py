@@ -8,19 +8,42 @@ from django.db.models import F, Q
 from .models import Listing, ListingImage
 from .forms import ListingForm
 from categories.models import Category
-
+from datetime import date, timedelta
 
 def index_view(request):
     listings_list = Listing.objects.filter(
         status='active', is_completed=False
     ).filter(
         Q(expiry_date__isnull=True) | Q(expiry_date__gte=date.today())
-    ).select_related('author', 'category').prefetch_related('images').order_by('-created_at')
+    ).select_related('author', 'category').prefetch_related('images').order_by('-is_sticky', '-is_urgent', '-created_at')
     paginator = Paginator(listings_list, 24)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     return render(request, 'listings/index.html', {'page_obj': page_obj})
 
+
+def detail_view(request, pk):
+    listing = get_object_or_404(
+        Listing.objects.select_related('author', 'category').prefetch_related('images'),
+        pk=pk
+    )
+    if listing.status != 'active':
+        if not request.user.is_authenticated:
+            messages.error(request, 'Объявление не найдено.')
+            return redirect('listings:index')
+        if listing.author != request.user and not request.user.is_staff:
+            messages.error(request, 'Объявление не найдено.')
+            return redirect('listings:index')
+    listing.increment_views(request)
+    images = listing.images.all()
+    show_contacts = request.user.is_authenticated
+    context = {
+        'listing': listing,
+        'images': images,
+        'show_contacts': show_contacts,
+        'is_completed': listing.is_completed,
+    }
+    return render(request, 'listings/detail.html', context)
 
 @login_required
 def create_listing_view(request):
@@ -74,35 +97,6 @@ def create_listing_view(request):
         'form': form,
         'selected_category_slug': selected_category_slug,
     })
-
-
-def detail_view(request, pk):
-    listing = get_object_or_404(
-        Listing.objects.select_related('author', 'category').prefetch_related('images'),
-        pk=pk
-    )
-    if listing.status != 'active':
-        if not request.user.is_authenticated:
-            messages.error(request, 'Объявление не найдено.')
-            return redirect('listings:index')
-        if listing.author != request.user and not request.user.is_staff:
-            messages.error(request, 'Объявление не найдено.')
-            return redirect('listings:index')
-
-    # Увеличиваем счётчики просмотров
-    listing.increment_views(request)
-
-    images = listing.images.all()
-    show_contacts = request.user.is_authenticated
-
-    context = {
-        'listing': listing,
-        'images': images,
-        'show_contacts': show_contacts,
-        'is_completed': listing.is_completed,
-    }
-    return render(request, 'listings/detail.html', context)
-
 
 @login_required
 def edit_listing_view(request, pk):

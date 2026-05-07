@@ -45,3 +45,17 @@ footer.bg-light {
     word-wrap: break-word;
     overflow-wrap: anywhere;
 }
+.card-promoted {
+    background-color: #fffde7 !important;  /* светло-желтый */
+    border: 2px solid #ffe082 !important;
+    box-shadow: 0 2px 12px rgba(255, 152, 0, 0.3);
+}
+.card-title {
+    /* существующие стили */
+}
+.recommended-item {
+    transition: background 0.2s;
+}
+.recommended-item:hover {
+    background-color: #f8f9fa;
+}

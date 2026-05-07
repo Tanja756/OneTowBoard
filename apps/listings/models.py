@@ -1,10 +1,9 @@
 from django.db import models
 from django.contrib.auth.models import User
-from categories.models import Category
-from apps.utils import listing_image_upload_to
 from django.db.models.signals import pre_save
 from django.dispatch import receiver
-from apps.utils import compress_uploaded_image
+from apps.utils import listing_image_upload_to, compress_uploaded_image
+from categories.models import Category
 from datetime import date
 
 class Listing(models.Model):
@@ -22,37 +21,14 @@ class Listing(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     is_promoted = models.BooleanField(default=False, verbose_name='Продвижение')
-    parameters = models.JSONField(default=dict, blank=True, verbose_name='Параметры')
+    is_sticky = models.BooleanField(default=False, verbose_name='Закреплено')
+    is_urgent = models.BooleanField(default=False, verbose_name='Срочное')
     is_completed = models.BooleanField(default=False, verbose_name='Завершено')
     expiry_date = models.DateField(blank=True, null=True, verbose_name='Активно до')
     total_views = models.PositiveIntegerField(default=0, verbose_name='Просмотров всего')
     today_views = models.PositiveIntegerField(default=0, verbose_name='Просмотров сегодня')
     last_view_date = models.DateField(blank=True, null=True, verbose_name='Последний просмотр')
-
-    def increment_views(self, request):
-        """Увеличивает счётчики просмотров, если пользователь авторизован и ещё не смотрел сегодня."""
-        if not request.user.is_authenticated:
-            return
-    
-        today = date.today()
-        # Проверяем, есть ли уже запись за сегодня от этого пользователя
-        already_viewed = self.view_logs.filter(
-            user=request.user,
-            viewed_at__date=today
-        ).exists()
-    
-        if not already_viewed:
-            # Сбрасываем today_views, если день сменился (на случай, если кто-то первый за день)
-            if self.last_view_date != today:
-                self.today_views = 1
-                self.last_view_date = today
-            else:
-                self.today_views += 1
-            self.total_views += 1
-            self.save(update_fields=['today_views', 'total_views', 'last_view_date'])
-    
-            # Фиксируем просмотр
-            self.view_logs.create(user=request.user)
+    parameters = models.JSONField(default=dict, blank=True, verbose_name='Параметры')
 
     class Meta:
         ordering = ['-created_at']
@@ -61,6 +37,28 @@ class Listing(models.Model):
 
     def __str__(self):
         return self.title
+
+    def get_all_parameters(self):
+        return self.category.get_all_parameters() if self.category else {}
+
+    def increment_views(self, request):
+        if not request.user.is_authenticated:
+            return
+        today = date.today()
+        already_viewed = self.view_logs.filter(
+            user=request.user,
+            viewed_at__date=today
+        ).exists()
+        if not already_viewed:
+            if self.last_view_date != today:
+                self.today_views = 1
+                self.last_view_date = today
+            else:
+                self.today_views += 1
+            self.total_views += 1
+            self.save(update_fields=['today_views', 'total_views', 'last_view_date'])
+            self.view_logs.create(user=request.user)
+
 
 class ListingImage(models.Model):
     listing = models.ForeignKey(Listing, on_delete=models.CASCADE, related_name='images')
@@ -71,17 +69,17 @@ class ListingImage(models.Model):
         return f'Фото для {self.listing.title}'
 
     def save(self, *args, **kwargs):
-        # При создании нового объекта или если изображение изменилось — сжимаем
         if self.pk is None:
+            compress_uploaded_image(self.image)
+        else:
             try:
                 old_instance = ListingImage.objects.get(pk=self.pk)
                 if old_instance.image != self.image:
                     compress_uploaded_image(self.image)
             except ListingImage.DoesNotExist:
                 compress_uploaded_image(self.image)
-        else:
-            compress_uploaded_image(self.image)
         super().save(*args, **kwargs)
+
 
 class ViewLog(models.Model):
     listing = models.ForeignKey(Listing, on_delete=models.CASCADE, related_name='view_logs')

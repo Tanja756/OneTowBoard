@@ -1,70 +1,103 @@
 {% extends 'base.html' %}
-{% block title %}Поиск{% if query %}: {{ query }}{% endif %} — {{ site_name }}{% endblock %}
-{% block description %}Результаты поиска{% if query %} по запросу «{{ query }}»{% endif %} на доске объявлений {{ site_name }}.{% endblock %}
-
+{% load static %}
 {% load url_helpers %}
 {% load category_tags %}
+{% load listing_tags %}
+
+{% block title %}Поиск{% if query %}: {{ query }}{% endif %} — {{ site_name }}{% endblock %}
+
 {% block content %}
-
-<h1 class="h5 mb-3">Поиск объявлений</h1>
-
-{% include 'includes/filter_sort.html' %}
-
-<form method="get" action="{% url 'search:search' %}" class="mb-4">
-  <div class="input-group">
-    <input type="text" name="q" value="{{ query }}" class="form-control" placeholder="Что ищете?">
-    <button type="submit" class="btn btn-primary">Найти</button>
-  </div>
-</form>
-
-{% if query %}
-  <h2 class="h6">Результаты по запросу «{{ query }}»</h2>
-  <div class="row g-3">
-    {% for listing in page_obj %}
-      <div class="col-6 col-md-4 col-lg-3">
-        <a href="{% url 'listings:detail' listing.pk %}" class="text-decoration-none text-dark">
-          <div class="card h-100 border-0 shadow-sm">
-            {% with listing.images.first as main_image %}
-              {% if main_image %}
-                <img src="{{ main_image.image.url }}" class="card-img-top" alt="{{ listing.title }}" style="height: 150px; object-fit: cover;">
-              {% else %}
-                <div class="bg-light d-flex align-items-center justify-content-center" style="height: 150px;">
-                  <span class="text-muted">Нет фото</span>
-                </div>
-              {% endif %}
-            {% endwith %}
-            <div class="card-body p-2">
-{% if listing.price %}
-  <div class="fw-bold fs-6 text-success">{{ listing.price|price_display }} ₽</div>
-{% endif %}
-<div class="small text-truncate">{{ listing.title }}</div>
-<div class="d-flex justify-content-between align-items-center mt-1">
-  <small class="text-muted">{{ listing.author.profile.get_display_name }}</small>
-  <small class="text-muted">{{ listing.created_at|date:"d.m" }}</small>
+<div class="row">
+  <!-- Боковая панель (без дерева категорий, только рекомендуемые) -->
+  <div class="col-md-3 mb-4">
+<div class="d-none d-md-block">
+    {% show_recommended limit=5 %}
 </div>
-            </div>
-          </div>
-        </a>
-      </div>
-    {% empty %}
-      <div class="col">Ничего не найдено.</div>
-    {% endfor %}
   </div>
 
-  <!-- Пагинация -->
-<nav class="mt-4">
-  <ul class="pagination justify-content-center">
-    {% if page_obj.has_previous %}
-      <li class="page-item"><a class="page-link" href="?{% url_replace page=1 %}">&laquo;</a></li>
-      <li class="page-item"><a class="page-link" href="?{% url_replace page=page_obj.previous_page_number %}">←</a></li>
-    {% endif %}
-    <li class="page-item disabled"><span class="page-link">{{ page_obj.number }} из {{ page_obj.paginator.num_pages }}</span></li>
-    {% if page_obj.has_next %}
-      <li class="page-item"><a class="page-link" href="?{% url_replace page=page_obj.next_page_number %}">→</a></li>
-      <li class="page-item"><a class="page-link" href="?{% url_replace page=page_obj.paginator.num_pages }}">&raquo;</a></li>
-    {% endif %}
-  </ul>
-</nav>
-{% endif %}
+  <!-- Основной контент -->
+  <div class="col-md-9">
+    <h1 class="h5 mb-3">Поиск объявлений</h1>
+    <form method="get" action="{% url 'search:search' %}" class="mb-3">
+      <div class="input-group">
+        <input type="text" name="q" value="{{ query }}" class="form-control form-control-sm" placeholder="Что ищете?">
+        <button class="btn btn-primary btn-sm" type="submit">Найти</button>
+      </div>
+    </form>
 
+    {% if query %}
+      <div class="d-flex gap-2 mb-3 align-items-center">
+        <span class="small text-muted">Результаты по запросу «{{ query }}»</span>
+        {% if price_from or price_to %}
+          <a href="?{% url_replace price_from='' price_to='' %}" class="text-decoration-none small text-danger">✕ Сбросить фильтр</a>
+        {% endif %}
+      </div>
+
+      {% include 'includes/filter_sort.html' %}
+
+      <div class="row g-3">
+        {% for listing in page_obj %}
+          <div class="col-6 col-md-4 col-lg-3">
+            <a href="{% url 'listings:detail' listing.pk %}" class="text-decoration-none text-dark">
+              <div class="card h-100 border-0 shadow-sm {% if listing.is_promoted %}card-promoted{% endif %}">
+                {% with listing.images.first as main_image %}
+                  {% if main_image %}
+                    <img src="{{ main_image.image.url }}" class="card-img-top" alt="{{ listing.title }}" style="height: 150px; object-fit: cover;">
+                  {% else %}
+                    {% get_category_image listing.category as cat_image %}
+                    {% if cat_image %}
+                      <img src="{{ cat_image }}" class="card-img-top" alt="{{ listing.title }}" style="height: 150px; object-fit: cover;">
+                    {% else %}
+                      <div class="bg-light d-flex align-items-center justify-content-center" style="height: 150px;">
+                        <span class="text-muted">Нет фото</span>
+                      </div>
+                    {% endif %}
+                  {% endif %}
+                {% endwith %}
+                <div class="card-body p-2 d-flex flex-column">
+                  {% if listing.price %}
+                    <div class="fw-bold fs-6 text-success">{{ listing.price|price_display }} ₽</div>
+                  {% endif %}
+<div class="small text-truncate">
+    {{ listing.title }}
+    {% if listing.is_urgent %}
+        <span class="badge bg-danger ms-1">Срочно</span>
+    {% endif %}
+</div>
+                  <div class="mt-auto d-flex justify-content-between align-items-center">
+                    <small class="text-muted text-truncate">{{ listing.category.name|default:"Без категории" }}</small>
+                    <small class="text-muted text-truncate ms-2">
+                      {% if listing.author.profile %}
+                        {{ listing.author.profile.get_display_name }}
+                      {% else %}
+                        {{ listing.author.username }}
+                      {% endif %}
+                    </small>
+                  </div>
+                </div>
+              </div>
+            </a>
+          </div>
+        {% empty %}
+          <div class="col">Ничего не найдено.</div>
+        {% endfor %}
+      </div>
+
+      <!-- Пагинация -->
+      <nav class="mt-4">
+        <ul class="pagination justify-content-center">
+          {% if page_obj.has_previous %}
+            <li class="page-item"><a class="page-link" href="?{% url_replace page=1 %}">&laquo;</a></li>
+            <li class="page-item"><a class="page-link" href="?{% url_replace page=page_obj.previous_page_number %}">←</a></li>
+          {% endif %}
+          <li class="page-item disabled"><span class="page-link">{{ page_obj.number }} из {{ page_obj.paginator.num_pages }}</span></li>
+          {% if page_obj.has_next %}
+            <li class="page-item"><a class="page-link" href="?{% url_replace page=page_obj.next_page_number %}">→</a></li>
+            <li class="page-item"><a class="page-link" href="?{% url_replace page=page_obj.paginator.num_pages }}">&raquo;</a></li>
+          {% endif %}
+        </ul>
+      </nav>
+    {% endif %}
+  </div>
+</div>
 {% endblock %}

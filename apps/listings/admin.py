@@ -1,6 +1,7 @@
 from django.contrib import admin
 from .models import Listing, ListingImage
 
+# Действия (actions)
 def make_active(modeladmin, request, queryset):
     queryset.update(status='active')
     modeladmin.message_user(request, "Выбранные объявления одобрены")
@@ -16,6 +17,7 @@ def make_moderation(modeladmin, request, queryset):
     modeladmin.message_user(request, "Выбранные объявления отправлены на модерацию")
 make_moderation.short_description = "Отправить на модерацию"
 
+
 class ListingImageInline(admin.TabularInline):
     model = ListingImage
     extra = 0
@@ -29,12 +31,12 @@ class ListingImageInline(admin.TabularInline):
     image_preview.allow_tags = True
     image_preview.short_description = 'Превью'
 
+
 @admin.register(Listing)
 class ListingAdmin(admin.ModelAdmin):
-    list_display = ('title', 'author', 'category', 'price', 'status', 'is_completed', 'created_at')
-    list_filter = ('status', 'category', 'is_completed', 'created_at')
-    search_fields = ('title', 'description', 'author__username')
-    list_editable = ('status',)
+    list_display = ('title', 'author', 'category', 'price', 'status', 'is_promoted', 'is_sticky', 'is_urgent', 'is_completed', 'expiry_date', 'created_at')
+    list_filter = ('status', 'category', 'is_promoted', 'is_sticky', 'is_urgent', 'is_completed', 'expiry_date', 'created_at')
+    list_editable = ('status', 'is_promoted', 'is_sticky', 'is_urgent')
     date_hierarchy = 'created_at'
     inlines = [ListingImageInline]
     actions = [make_active, make_inactive, make_moderation]
@@ -44,7 +46,7 @@ class ListingAdmin(admin.ModelAdmin):
             'fields': ('title', 'description', 'price')
         }),
         ('Категория и статус', {
-            'fields': ('category', 'status', 'is_promoted')
+            'fields': ('category', 'status', 'is_promoted', 'is_sticky', 'is_urgent', 'is_completed', 'expiry_date')
         }),
         ('Автор', {
             'fields': ('author',)

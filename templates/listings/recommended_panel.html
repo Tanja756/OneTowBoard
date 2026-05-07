@@ -1,0 +1,23 @@
+{% load url_helpers %}
+{% if recommended %}
+<div class="card mt-3">
+  <div class="card-body">
+    <h6 class="card-title">Рекомендуемые</h6>
+    {% for item in recommended %}
+    <div class="d-flex align-items-start mb-2">
+      {% with item.images.first as img %}
+        {% if img %}
+          <img src="{{ img.image.url }}" class="rounded me-2" width="40" height="40" style="object-fit: cover;">
+        {% endif %}
+      {% endwith %}
+      <div>
+        <a href="{% url 'listings:detail' item.pk %}" class="small text-decoration-none">{{ item.title }}</a>
+        <div class="small text-muted">{{ item.price|price_display }} ₽</div>
+      </div>
+    </div>
+    {% empty %}
+      <p class="text-muted small">Нет рекомендуемых объявлений</p>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}

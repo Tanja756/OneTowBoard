@@ -27,6 +27,9 @@
 {% if not listing.is_completed and listing.expiry_date %}
     <span class="badge bg-light text-dark">{{ listing.expiry_date|days_until }}</span>
 {% endif %}
+{% if listing.is_urgent %}
+    <span class="badge bg-danger">Срочно</span>
+{% endif %}
                             {% if listing.category %}
                                 в <a href="{% url 'categories:detail' listing.category.slug %}">{{ listing.category.name }}</a>
                             {% endif %}

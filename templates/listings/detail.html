@@ -50,6 +50,9 @@
     <!-- Описание -->
     <div class="mt-4">
       <h1 class="h4">{{ listing.title }}</h1>
+{% if listing.is_urgent %}
+    <span class="badge bg-danger mb-2">Срочное объявление</span>
+{% endif %}
       {% if listing.status != 'active' %}
         <div class="alert alert-warning">Статус: {{ listing.get_status_display }}</div>
       {% endif %}

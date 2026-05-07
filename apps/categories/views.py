@@ -1,20 +1,24 @@
 from django.core.paginator import Paginator
-from django.db.models import F
+from django.db.models import F, Q
 from django.http import JsonResponse
 from django.shortcuts import render, get_object_or_404
 from django.template.loader import render_to_string
+from datetime import date
 from .models import Category
 from listings.models import Listing
+
 
 def list_view(request):
     categories = Category.objects.all()
     return render(request, 'categories/list.html', {'categories': categories})
+
 
 def get_parameters_ajax(request):
     """Возвращает HTML с полями для параметров выбранной категории."""
     category_slug = request.GET.get('category_slug')
     if not category_slug:
         return JsonResponse({'html': ''})
+
     try:
         category = Category.objects.get(slug=category_slug)
     except Category.DoesNotExist:
@@ -33,12 +37,20 @@ def get_parameters_ajax(request):
     html = render_to_string('categories/parameters_form.html', {'parameters': parameters})
     return JsonResponse({'html': html})
 
+
 def detail_view(request, slug):
     category = get_object_or_404(Category, slug=slug)
     # Получаем ID текущей категории и всех её потомков
     category_ids = category.get_descendants_ids(include_self=True)
 
-    listings = Listing.objects.filter(category_id__in=category_ids, status='active', is_completed=False)
+    # Базовый queryset с фильтрацией по сроку и незавершённости
+    listings = Listing.objects.filter(
+        category_id__in=category_ids,
+        status='active',
+        is_completed=False
+    ).filter(
+        Q(expiry_date__isnull=True) | Q(expiry_date__gte=date.today())
+    )
 
     # Фильтры цены
     price_from = request.GET.get('price_from')
@@ -53,7 +65,7 @@ def detail_view(request, slug):
         if price_to:
             listings = listings.filter(price__lte=price_to)
 
-    # Сортировка
+    # Сортировка (сначала закреплённые, потом по выбранному критерию)
     sort = request.GET.get('sort', 'newest')
     sort_options = {
         'newest': '-created_at',
@@ -62,7 +74,7 @@ def detail_view(request, slug):
         'expensive': F('price').desc(nulls_last=True),
     }
     ordering = sort_options.get(sort, '-created_at')
-    listings = listings.order_by(ordering).prefetch_related('images').select_related('author', 'category')
+    listings = listings.order_by('-is_sticky', '-is_urgent', ordering).prefetch_related('images').select_related('author', 'category')
 
     # Наследование параметров от родительских категорий
     def get_all_parameters(cat):
@@ -76,7 +88,7 @@ def detail_view(request, slug):
     parameters = list(get_all_parameters(category).values())
     selected_params = {p.slug: request.GET.get(p.slug) for p in parameters}
 
-    # Фильтрация по параметрам
+    # Фильтрация по параметрам категории
     for param in parameters:
         value = request.GET.get(param.slug)
         if value:

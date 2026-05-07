@@ -1,14 +1,24 @@
 from django.core.paginator import Paginator
 from django.db.models import Q, F
+from django.db.models.functions import Lower
 from django.shortcuts import render
+from datetime import date
 from listings.models import Listing
+
 
 def search_view(request):
     query = request.GET.get('q', '')
-    results = Listing.objects.filter(status='active', is_completed=False)
+    results = Listing.objects.filter(status='active', is_completed=False).filter(
+        Q(expiry_date__isnull=True) | Q(expiry_date__gte=date.today())
+    )
+
     if query:
-        results = results.filter(
-            Q(title__icontains=query) | Q(description__icontains=query)
+        # Приводим и поле, и запрос к нижнему регистру для полной независимости от регистра
+        results = results.annotate(
+            title_lower=Lower('title'),
+            description_lower=Lower('description')
+        ).filter(
+            Q(title_lower__contains=query.lower()) | Q(description_lower__contains=query.lower())
         )
 
     # Фильтры
@@ -33,7 +43,8 @@ def search_view(request):
         'expensive': F('price').desc(nulls_last=True),
     }
     ordering = sort_options.get(sort, '-created_at')
-    results = results.order_by(ordering).prefetch_related('images').select_related('author', 'category')
+
+    results = results.order_by('-is_sticky', '-is_urgent', ordering).prefetch_related('images').select_related('author', 'category')
 
     paginator = Paginator(results, 20)
     page_number = request.GET.get('page')
