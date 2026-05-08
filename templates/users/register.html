@@ -12,7 +12,7 @@
         <h1 class="h4 mb-3 text-center">Регистрация</h1>
         <form method="post" novalidate>
           {% csrf_token %}
-          
+
           {% if form.errors %}
             <div class="alert alert-danger">
               Пожалуйста, исправьте ошибки ниже.
@@ -46,7 +46,10 @@
 
           <div class="mb-3">
             <label class="form-label">{{ form.phone.label }}</label>
-            {{ form.phone|add_attr:"id:id_phone" }}
+            {{ form.phone }}
+            {% if form.phone.errors %}
+              <div class="text-danger small">{{ form.phone.errors }}</div>
+            {% endif %}
           </div>
 
           <div class="mb-3">
