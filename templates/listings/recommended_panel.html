@@ -1,18 +1,31 @@
 {% load url_helpers %}
+{% load category_tags %}
 {% if recommended %}
 <div class="card mt-3">
   <div class="card-body">
     <h6 class="card-title fw-bold">Рекомендуемые</h6>
     {% for item in recommended %}
     <div class="d-flex align-items-start mb-2">
-      {% with item.images.first as img %}
-        {% if img %}
-          <img src="{{ img.image.url }}" class="rounded me-2" width="40" height="40" style="object-fit: cover;">
+      <!-- Миниатюра -->
+      {% with item.images.first as main_image %}
+        {% if main_image %}
+          <img src="{{ main_image.image.url }}" class="rounded me-2" width="40" height="40" style="object-fit: cover;" alt="">
+        {% else %}
+          {% get_category_image item.category as cat_image %}
+          {% if cat_image %}
+            <img src="{{ cat_image }}" class="rounded me-2" width="40" height="40" style="object-fit: contain; background: #f8f8f8;" alt="">
+          {% else %}
+            <div class="bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center me-2" style="width:40px; height:40px; font-size:0.9rem;">
+              {{ item.category.name|slice:":1"|upper }}
+            </div>
+          {% endif %}
         {% endif %}
       {% endwith %}
       <div>
         <a href="{% url 'listings:detail' item.pk %}" class="small text-decoration-none">{{ item.title }}</a>
-        <div class="small text-muted">{{ item.price|price_display }} ₽</div>
+        {% if item.price %}
+          <div class="small text-muted">{{ item.price|price_display }} ₽</div>
+        {% endif %}
       </div>
     </div>
     {% empty %}
