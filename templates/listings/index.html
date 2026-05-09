@@ -8,15 +8,26 @@
 
 {% block content %}
 <div class="row">
-  <!-- Боковая панель с деревом категорий -->
+  <!-- Боковая панель с деревом категорий, CTA и рекомендуемыми -->
   <div class="col-md-3 mb-4">
+    <!-- Дерево категорий -->
     <div class="card">
       <div class="card-body">
         <h6 class="card-title fw-bold">Категории</h6>
         {% show_category_tree current_category=None %}
       </div>
     </div>
-    <!-- Рекомендуемые объявления -->
+
+    <!-- Блок CTA (Призыв к действию) -->
+    <div class="card mt-3 bg-primary text-white">
+      <div class="card-body text-center">
+        <h6 class="card-title">Разместите своё объявление</h6>
+        <p class="small">Это займёт всего пару минут</p>
+        <a href="{% url 'listings:create' %}" class="btn btn-light btn-sm">+ Подать объявление</a>
+      </div>
+    </div>
+
+    <!-- Рекомендуемые объявления (скрыты на мобильных) -->
     <div class="d-none d-md-block">
         {% show_recommended limit=5 %}
     </div>
@@ -129,7 +140,7 @@
       {% endfor %}
     </div>
     {% else %}
-    <!-- Отображение плиткой (сетка) – оставлено без изменений -->
+    <!-- Отображение плиткой (сетка) -->
     <div class="row g-3">
       {% for listing in page_obj %}
         <div class="col-6 col-md-4 col-lg-3">

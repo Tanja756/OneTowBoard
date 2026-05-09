@@ -14,7 +14,10 @@ sys.path.insert(0, os.path.join(BASE_DIR, 'apps'))
 SITE_NAME = 'Продай или Купи на Раз, Два'                         # Название доски объявлений
 SITE_DESCRIPTION = 'Бесплатная доска объявлений: недвижимость, авто, услуги, работа и многое другое'
 SITE_KEYWORDS = 'доска объявлений, бесплатные объявления, купить, продать, недвижимость, авто, работа'
-
+SITE_ADDRESS = ''
+SITE_PHONE = ''
+SITE_EMAIL = ''
+SITE_WORKING_HOURS = ''
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DJANGO_DEBUG', 'True').lower() == 'true'
 ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
