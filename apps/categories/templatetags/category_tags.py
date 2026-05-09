@@ -5,7 +5,7 @@ register = template.Library()
 
 @register.inclusion_tag('categories/tree.html')
 def show_category_tree(current_category=None):
-    categories = Category.objects.filter(parent__isnull=True).prefetch_related('children')
+    categories = Category.objects.filter(parent__isnull=True).order_by('order', 'name').prefetch_related('children')
     expanded_slugs = set()
     if current_category:
         cat = current_category
@@ -21,7 +21,7 @@ def show_category_tree(current_category=None):
 
 @register.inclusion_tag('categories/tree_select.html')
 def show_category_tree_select(selected_slug=None):
-    categories = Category.objects.filter(parent__isnull=True).prefetch_related('children')
+    categories = Category.objects.filter(parent__isnull=True).order_by('order', 'name').prefetch_related('children')
     return {'categories': categories, 'selected_slug': selected_slug}
 
 @register.simple_tag

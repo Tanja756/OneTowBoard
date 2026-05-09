@@ -9,7 +9,7 @@ from listings.models import Listing
 
 
 def list_view(request):
-    categories = Category.objects.filter(parent__isnull=True)  # только корневые
+    categories = Category.objects.filter(parent__isnull=True).order_by('order', 'name')
     return render(request, 'categories/list.html', {'categories': categories})
 
 def get_parameters_ajax(request):

@@ -16,10 +16,12 @@ class Category(models.Model):
         ('list', 'Список'),
     )
     view_mode = models.CharField(max_length=4, choices=VIEW_MODE_CHOICES, default='grid', verbose_name='Вид по умолчанию')
+    order = models.PositiveIntegerField(default=0, verbose_name='Порядок')
 
     class Meta:
         verbose_name = 'Категория'
         verbose_name_plural = 'Категории'
+        ordering = ['order', 'name']  # сортировка по умолчанию
 
     def __str__(self):
         return self.name
