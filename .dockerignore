@@ -9,3 +9,4 @@ static/
 staticfiles/
 .env
 *.md
+gmail.env
