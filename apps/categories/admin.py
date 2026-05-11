@@ -5,6 +5,7 @@ class CategoryParameterInline(admin.TabularInline):
     model = CategoryParameter
     extra = 0
     prepopulated_fields = {'slug': ('name',)}
+    fields = ('name', 'slug', 'param_type', 'choices', 'mask', 'placeholder')
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):

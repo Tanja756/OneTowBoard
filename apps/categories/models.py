@@ -51,12 +51,19 @@ class CategoryParameter(models.Model):
     PARAMETER_TYPES = (
         ('choice', 'Выбор из списка'),
         ('boolean', 'Да/Нет'),
+        ('integer', 'Целое число'),
+        ('float', 'Дробное число'),
+        ('text', 'Текст'),
+        ('mask', 'Поле с маской'),
     )
     category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='parameters')
     name = models.CharField(max_length=100, verbose_name='Название')
     slug = models.SlugField(max_length=100, verbose_name='URL-ключ')
     param_type = models.CharField(max_length=10, choices=PARAMETER_TYPES, default='choice', verbose_name='Тип')
-    choices = models.TextField(blank=True, help_text='Варианты через запятую или с новой строки', verbose_name='Варианты')
+    choices = models.TextField(blank=True, help_text='Варианты через запятую или с новой строки (если тип «Выбор из списка»)', verbose_name='Варианты')
+    # Новые поля для маски и подсказки
+    mask = models.CharField(max_length=100, blank=True, help_text='Например: +7 (999) 999-99-99', verbose_name='Маска (для типа «Поле с маской»)')
+    placeholder = models.CharField(max_length=200, blank=True, verbose_name='Подсказка в поле')
 
     class Meta:
         unique_together = ('category', 'slug')
@@ -67,6 +74,7 @@ class CategoryParameter(models.Model):
         return f"{self.category.name} → {self.name}"
 
     def get_choices_list(self):
+        """Возвращает список вариантов только для типа choice, иначе пустой список."""
         if self.param_type == 'choice' and self.choices.strip():
             raw = self.choices.replace('\r\n', '\n').replace('\r', '\n')
             parts = []
@@ -77,15 +85,3 @@ class CategoryParameter(models.Model):
                         parts.append(part)
             return parts
         return []
-
-    def get_descendants_ids(self, include_self=True):
-        """
-        Возвращает список id всех потомков (рекурсивно).
-        Если include_self=True, включает и свой id.
-        """
-        ids = []
-        if include_self:
-            ids.append(self.id)
-        for child in self.children.all():
-            ids.extend(child.get_descendants_ids(include_self=True))
-        return ids

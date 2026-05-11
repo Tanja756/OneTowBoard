@@ -1,3 +1,4 @@
+import uuid
 import json
 from datetime import date, timedelta
 from django.contrib.auth.decorators import login_required
@@ -58,54 +59,85 @@ def detail_view(request, pk):
 def create_listing_view(request):
     selected_category_slug = request.GET.get('category', '')
 
-    if request.method == 'POST':
-        form = ListingForm(request.POST)
-        category_slug = request.POST.get('category_slug')
-        if not category_slug:
-            messages.error(request, 'Пожалуйста, выберите категорию. Фотографии придётся загрузить заново.')
-            return render(request, 'listings/create.html', {
-                'form': form,
-                'selected_category_slug': '',
-            })
-
-        try:
-            category = Category.objects.get(slug=category_slug)
-        except Category.DoesNotExist:
-            messages.error(request, 'Выбранная категория не существует.')
-            return render(request, 'listings/create.html', {
-                'form': form,
-                'selected_category_slug': '',
-            })
-
-        if form.is_valid():
-            listing = form.save(commit=False)
-            listing.author = request.user
-            listing.category = category
-            # Вычисляем срок окончания
-            duration_days = int(form.cleaned_data['duration'])
-            listing.expiry_date = date.today() + timedelta(days=duration_days)
-            # Параметры категории
-            param_data = {}
-            for key, value in request.POST.items():
-                if key.startswith('param_'):
-                    slug = key[6:]
-                    if value:
-                        param_data[slug] = value
-            listing.parameters = param_data
-            listing.save()
-
-            images = request.FILES.getlist('images')
-            for img in images:
-                ListingImage.objects.create(listing=listing, image=img)
-            messages.success(request, 'Объявление отправлено на модерацию. Оно появится в ленте после проверки модератором.')
-            return redirect('listings:index')
-    else:
+    # Генерируем новый токен при каждом GET-запросе
+    if request.method == 'GET':
+        form_token = str(uuid.uuid4())
+        request.session['form_token'] = form_token
         form = ListingForm()
+        return render(request, 'listings/create.html', {
+            'form': form,
+            'selected_category_slug': selected_category_slug,
+            'form_token': form_token,
+        })
 
-    return render(request, 'listings/create.html', {
-        'form': form,
-        'selected_category_slug': selected_category_slug,
-    })
+    # POST-запрос
+    form = ListingForm(request.POST)
+    category_slug = request.POST.get('category_slug')
+
+    # Проверка токена
+    client_token = request.POST.get('form_token', '')
+    server_token = request.session.get('form_token', '')
+    if client_token != server_token:
+        messages.error(request, 'Объявление уже отправлено. Пожалуйста, проверьте результат.')
+        return redirect('listings:index')
+
+    if not category_slug:
+        messages.error(request, 'Пожалуйста, выберите категорию. Фотографии придётся загрузить заново.')
+        # Генерируем новый токен, чтобы можно было исправить ошибку
+        request.session['form_token'] = str(uuid.uuid4())
+        return render(request, 'listings/create.html', {
+            'form': form,
+            'selected_category_slug': '',
+            'form_token': request.session['form_token'],
+        })
+
+    try:
+        category = Category.objects.get(slug=category_slug)
+    except Category.DoesNotExist:
+        messages.error(request, 'Выбранная категория не существует.')
+        request.session['form_token'] = str(uuid.uuid4())
+        return render(request, 'listings/create.html', {
+            'form': form,
+            'selected_category_slug': '',
+            'form_token': request.session['form_token'],
+        })
+
+    if form.is_valid():
+        listing = form.save(commit=False)
+        listing.author = request.user
+        listing.category = category
+        # Вычисляем срок окончания
+        duration_days = int(form.cleaned_data['duration'])
+        listing.expiry_date = date.today() + timedelta(days=duration_days)
+        # Параметры категории
+        param_data = {}
+        for key, value in request.POST.items():
+            if key.startswith('param_'):
+                slug = key[6:]
+                if value:
+                    param_data[slug] = value
+        listing.parameters = param_data
+        listing.save()
+
+        images = request.FILES.getlist('images')
+        for img in images:
+            ListingImage.objects.create(listing=listing, image=img)
+
+        # Удаляем использованный токен
+        if 'form_token' in request.session:
+            del request.session['form_token']
+            request.session.modified = True
+
+        messages.success(request, 'Объявление отправлено на модерацию. Оно появится в ленте после проверки модератором.')
+        return redirect('listings:index')
+    else:
+        # Если форма невалидна, генерируем новый токен
+        request.session['form_token'] = str(uuid.uuid4())
+        return render(request, 'listings/create.html', {
+            'form': form,
+            'selected_category_slug': '',
+            'form_token': request.session['form_token'],
+        })
 
 @login_required
 def edit_listing_view(request, pk):
@@ -115,12 +147,21 @@ def edit_listing_view(request, pk):
         return redirect('listings:detail', pk=pk)
 
     if request.method == 'POST':
+        # Проверка токена
+        client_token = request.POST.get('form_token', '')
+        server_token = request.session.get('form_token', '')
+        if client_token != server_token:
+            messages.error(request, 'Объявление уже обновлено. Пожалуйста, проверьте результат.')
+            return redirect('listings:detail', pk=pk)
+
         form = ListingForm(request.POST, instance=listing)
         if form.is_valid():
             listing = form.save(commit=False)
-            # При редактировании срок можно обновлять, добавив поле duration в форму
-            # Пока оставляем без изменений
-            # Обработка параметров
+            # Срок публикации
+            if 'duration' in form.cleaned_data:
+                duration_days = int(form.cleaned_data['duration'])
+                listing.expiry_date = date.today() + timedelta(days=duration_days)
+            # Параметры категории
             param_data = {}
             for key, value in request.POST.items():
                 if key.startswith('param_'):
@@ -139,22 +180,29 @@ def edit_listing_view(request, pk):
             images = request.FILES.getlist('images')
             for img in images:
                 ListingImage.objects.create(listing=listing, image=img)
+
+            # Обновляем токен после успешного сохранения
+            request.session['form_token'] = str(uuid.uuid4())
             messages.success(request, 'Объявление обновлено.')
             return redirect('listings:detail', pk=pk)
     else:
         form = ListingForm(instance=listing)
 
-    existing_params = listing.parameters or {}
+    # Генерируем токен при GET-запросе
+    if 'form_token' not in request.session:
+        request.session['form_token'] = str(uuid.uuid4())
+    form_token = request.session['form_token']
+
     context = {
         'form': form,
         'listing': listing,
         'existing_images': listing.images.all(),
-        'existing_params_json': json.dumps(existing_params) if existing_params else '{}',
+        'existing_params_json': json.dumps(listing.parameters) if listing.parameters else '{}',
         'parameters': list(listing.category.get_all_parameters().values()) if listing.category else [],
-        'param_values': existing_params,
+        'param_values': listing.parameters or {},
+        'form_token': form_token,
     }
     return render(request, 'listings/edit.html', context)
-
 
 @login_required
 def delete_listing_view(request, pk):

@@ -10,6 +10,7 @@
     <h1 class="h3 mb-4">Редактировать объявление</h1>
     <form method="post" enctype="multipart/form-data" id="listingForm" novalidate>
       {% csrf_token %}
+      <input type="hidden" name="form_token" value="{{ form_token|default:'' }}">
 
       <!-- Блок: Категория (статичная) -->
       <div class="card mb-3">
