@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.core.paginator import Paginator
 from .forms import RegisterForm, UserLoginForm, ProfileForm
 from listings.models import Listing
 
@@ -85,6 +86,22 @@ def profile_view(request):
 
 @login_required
 def my_listings_view(request):
-    """Управление объявлениями (Мои объявления)"""
+    status_filter = request.GET.get('status', 'all')
     listings = request.user.listings.prefetch_related('images').order_by('-created_at')
-    return render(request, 'users/my_listings.html', {'listings': listings})
+
+    if status_filter == 'active':
+        listings = listings.filter(status='active', is_completed=False)
+    elif status_filter == 'moderation':
+        listings = listings.filter(status='moderation')
+    elif status_filter == 'completed':
+        listings = listings.filter(is_completed=True)
+    # 'all' — без фильтра
+
+    paginator = Paginator(listings, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, 'users/my_listings.html', {
+        'listings': page_obj,
+        'status_filter': status_filter,
+    })

@@ -73,7 +73,7 @@
         </div>
       </div>
 
-      <!-- Блок: Дополнительные параметры (скрыт, пока не загружены параметры) -->
+      <!-- Дополнительные параметры -->
       <div id="parametersBlock" class="card mb-3" style="display: none;">
         <div class="card-body">
           <h5 class="card-title mb-3 text-primary fw-bold">Дополнительные параметры</h5>
@@ -86,17 +86,16 @@
         </div>
       </div>
 
-      <!-- Блок: Фотографии -->
+      <!-- Фотографии -->
       <div class="card mb-3">
         <div class="card-body">
           <h5 class="card-title mb-3 text-primary fw-bold">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="me-2" viewBox="0 0 16 16">
-              <path d="M4 4.5a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-.5.5h-7a.5.5 0 0 1-.5-.5v-7zM3 3a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V3z"/>
+              <path d="M4 4.5a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 .5.5v7a .5.5 0 0 1-.5.5h-7a.5.5 0 0 1-.5-.5v-7zM3 3a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V3z"/>
             </svg>
             Фотографии
           </h5>
-          <div class="row align-items-center">
-            <!-- Левая часть: зона загрузки -->
+          <div class="row">
             <div class="col-md-8">
               <div class="border rounded p-4 text-center bg-light" id="dropZone" style="min-height: 150px;">
                 <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="#6c757d" class="mb-2" viewBox="0 0 16 16">
@@ -116,24 +115,28 @@
               <input type="file" name="images" id="id_images" multiple accept="image/*" class="d-none">
               <div id="imagePreviewContainer" class="d-flex flex-wrap gap-2 mt-2"></div>
             </div>
-            <!-- Правая часть: советы (без рамки, по центру) -->
-            <div class="col-md-4 d-none d-md-flex flex-column justify-content-center align-items-center">
-              <h6 class="fw-bold mb-3">Советы по фото:</h6>
-              <ul class="list-unstyled small mb-0">
-                <li class="mb-2 d-flex align-items-start">
-                  <span class="text-success me-2">✅</span>
-                  Используйте качественные фотографии
-                </li>
-                <li class="mb-2 d-flex align-items-start">
-                  <span class="text-success me-2">✅</span>
-                  Покажите товар с разных ракурсов
-                </li>
-                <li class="d-flex align-items-start">
-                  <span class="text-success me-2">✅</span>
-                  Избегайте размытых изображений
-                </li>
-              </ul>
-            </div>
+<div class="col-md-4 d-none d-md-block d-flex align-items-center">
+  <div class="ps-3">
+  	<h6></h6>
+  	<h6></h6>
+  	<h6></h6>
+    <h6 class="fw-bold">Советы по фото:</h6>
+    <ul class="list-unstyled small mb-0">
+      <li class="mb-2 d-flex align-items-start">
+        <span class="text-success me-2">✅</span>
+        Используйте качественные фотографии
+      </li>
+      <li class="mb-2 d-flex align-items-start">
+        <span class="text-success me-2">✅</span>
+        Покажите товар с разных ракурсов
+      </li>
+      <li class="d-flex align-items-start">
+        <span class="text-success me-2">✅</span>
+        Избегайте размытых изображений
+      </li>
+    </ul>
+  </div>
+</div>
           </div>
         </div>
       </div>
@@ -147,22 +150,6 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Блокировка повторной отправки
-    const form = document.getElementById('listingForm');
-    if (form) {
-        form.addEventListener('submit', function(e) {
-            const submitBtn = form.querySelector('button[type="submit"]');
-            if (submitBtn) {
-                if (submitBtn.disabled) {
-                    e.preventDefault();
-                    return false;
-                }
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Отправка...';
-            }
-        });
-    }
-
     const slugInput = document.getElementById('id_category_slug');
     const parametersBlock = document.getElementById('parametersBlock');
     const parametersContainer = document.getElementById('parametersContainer');
@@ -194,56 +181,43 @@ document.addEventListener('DOMContentLoaded', function() {
         loadParameters();
     }
 
-    // ---------- Drag & Drop и предпросмотр фото ----------
+    // ---------- Работа с фото: предпросмотр, удаление, перетаскивание ----------
     const fileInput = document.getElementById('id_images');
     const selectBtn = document.getElementById('selectImagesBtn');
     const dropZone = document.getElementById('dropZone');
     const dropZoneClick = document.getElementById('dropZoneClick');
     const previewContainer = document.getElementById('imagePreviewContainer');
-    let selectedFiles = [];
+    let selectedFiles = []; // массив File объектов
 
     selectBtn.addEventListener('click', () => fileInput.click());
     if (dropZoneClick) dropZoneClick.addEventListener('click', () => fileInput.click());
 
+    // Добавление файлов из input
     fileInput.addEventListener('change', () => {
         addFiles(Array.from(fileInput.files));
     });
 
+    // Drag & Drop
     if (dropZone) {
         ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
             dropZone.addEventListener(eventName, preventDefaults, false);
         });
-
-        function preventDefaults(e) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
-
+        function preventDefaults(e) { e.preventDefault(); e.stopPropagation(); }
         ['dragenter', 'dragover'].forEach(eventName => {
-            dropZone.addEventListener(eventName, highlight, false);
+            dropZone.addEventListener(eventName, () => dropZone.classList.add('border-primary'));
         });
-
         ['dragleave', 'drop'].forEach(eventName => {
-            dropZone.addEventListener(eventName, unhighlight, false);
+            dropZone.addEventListener(eventName, () => dropZone.classList.remove('border-primary'));
         });
-
-        function highlight(e) {
-            dropZone.classList.add('border-primary');
-        }
-
-        function unhighlight(e) {
-            dropZone.classList.remove('border-primary');
-        }
-
         dropZone.addEventListener('drop', function(e) {
-            const dt = e.dataTransfer;
-            const files = dt.files;
+            const files = e.dataTransfer.files;
             addFiles(Array.from(files));
         });
     }
 
     function addFiles(newFiles) {
         newFiles.forEach(file => {
+            // Проверка на дубликаты
             if (!selectedFiles.some(f => f.name === file.name && f.size === file.size && f.lastModified === file.lastModified)) {
                 if (file.size > 10 * 1024 * 1024) {
                     alert('Файл ' + file.name + ' превышает 10 МБ и не будет добавлен.');
@@ -256,24 +230,36 @@ document.addEventListener('DOMContentLoaded', function() {
         updateFileInput();
     }
 
+    // Удаление файла из превью
+    previewContainer.addEventListener('click', function(e) {
+        const removeBtn = e.target.closest('.remove-image');
+        if (!removeBtn) return;
+        const index = parseInt(removeBtn.getAttribute('data-index'), 10);
+        selectedFiles.splice(index, 1);
+        updatePreview();
+        updateFileInput();
+    });
+
     function updatePreview() {
         previewContainer.innerHTML = '';
-        selectedFiles.forEach((file, index) => {
+        selectedFiles.forEach((file, idx) => {
             const reader = new FileReader();
             reader.onload = (e) => {
-                const img = document.createElement('img');
-                img.src = e.target.result;
-                img.width = 100;
-                img.height = 100;
-                img.style.objectFit = 'cover';
-                img.className = 'rounded border';
-                previewContainer.appendChild(img);
+                const div = document.createElement('div');
+                div.className = 'position-relative';
+                div.innerHTML = `
+                    <img src="${e.target.result}" width="100" height="100" style="object-fit: cover;" class="rounded border">
+                    <button type="button" class="btn-close position-absolute top-0 end-0 bg-white rounded-circle p-1 remove-image" 
+                            data-index="${idx}" title="Удалить"></button>
+                `;
+                previewContainer.appendChild(div);
             };
             reader.readAsDataURL(file);
         });
     }
 
     function updateFileInput() {
+        // Используем DataTransfer для создания нового FileList
         const dt = new DataTransfer();
         selectedFiles.forEach(file => dt.items.add(file));
         fileInput.files = dt.files;
