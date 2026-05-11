@@ -131,4 +131,7 @@ EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True').lower() == 'true'
 EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@example.com')
-TECH_SUPPORT_EMAIL = os.environ.get('TECH_SUPPORT_EMAIL', 'support@example.com')
+TECH_SUPPORT_EMAIL = os.environ.get('TECH_SUPPORT_EMAIL', DEFAULT_FROM_EMAIL)
+# Уведомления техподдержке
+NOTIFY_ADMIN_NEW_USER = os.environ.get('NOTIFY_ADMIN_NEW_USER', 'False').lower() == 'true'
+NOTIFY_ADMIN_NEW_LISTING = os.environ.get('NOTIFY_ADMIN_NEW_LISTING', 'False').lower() == 'true'

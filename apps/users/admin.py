@@ -3,12 +3,11 @@ from .models import Profile
 
 @admin.register(Profile)
 class ProfileAdmin(admin.ModelAdmin):
-    list_display = ('user', 'phone', 'city', 'profile_type', 'avatar_preview')
-    list_filter = ('profile_type',)
+    list_display = ('user', 'user_email', 'phone', 'city', 'profile_type', 'email_verified')
+    list_filter = ('profile_type', 'email_verified')
+    search_fields = ('user__username', 'phone', 'city')
+    readonly_fields = ('user_email',)
 
-    def avatar_preview(self, obj):
-        if obj.avatar:
-            return f'<img src="{obj.avatar.url}" width="40" style="border-radius: 50%;" />'
-        return "Нет"
-    avatar_preview.allow_tags = True
-    avatar_preview.short_description = 'Аватар'
+    def user_email(self, obj):
+        return obj.user.email
+    user_email.short_description = 'Email'

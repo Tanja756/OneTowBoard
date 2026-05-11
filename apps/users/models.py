@@ -18,6 +18,8 @@ class Profile(models.Model):
     avatar = models.ImageField(upload_to=avatar_upload_to, blank=True, null=True, verbose_name='Аватар')
     profile_type = models.CharField(max_length=10, choices=USER_TYPE_CHOICES, default='person', verbose_name='Тип профиля')
     display_name = models.CharField(max_length=100, blank=True, verbose_name='Отображаемое имя')
+    email_verified = models.BooleanField(default=False, verbose_name='Email подтверждён')
+    verification_token = models.CharField(max_length=64, blank=True, verbose_name='Токен верификации')
 
     def __str__(self):
         return f'Профиль {self.user.username}'

@@ -5,6 +5,51 @@ from django.contrib import messages
 from django.core.paginator import Paginator
 from .forms import RegisterForm, UserLoginForm, ProfileForm
 from listings.models import Listing
+import uuid
+from django.core.mail import send_mail
+from django.conf import settings
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes
+from django.contrib.auth.models import User
+
+@login_required
+def resend_verification_email(request):
+    user = request.user
+    if user.profile.email_verified:
+        messages.info(request, 'Ваш email уже подтверждён.')
+        return redirect('users:profile')
+
+    # Генерируем новый токен
+    user.profile.verification_token = str(uuid.uuid4())
+    user.profile.save()
+
+    uid = urlsafe_base64_encode(force_bytes(user.pk))
+    from django.urls import reverse
+    verification_link = request.build_absolute_uri(reverse('users:verify_email', kwargs={'uidb64': uid, 'token': user.profile.verification_token}))
+    send_mail(
+        subject=f'Подтверждение email на {settings.SITE_NAME}',
+        message=f'Здравствуйте, {user.username}!\n\nДля подтверждения вашего email перейдите по ссылке:\n{verification_link}',
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        recipient_list=[user.email],
+        fail_silently=False,
+    )
+    messages.success(request, 'Письмо повторно отправлено. Проверьте почту.')
+    return redirect('users:profile')
+
+def verify_email_view(request, uidb64, token):
+    try:
+        uid = urlsafe_base64_decode(uidb64).decode()
+        user = User.objects.get(pk=uid)
+    except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+        user = None
+
+    if user is not None and user.profile.verification_token == token:
+        user.profile.email_verified = True
+        user.profile.verification_token = ''
+        user.profile.save()
+        return render(request, 'users/verify_email_result.html', {'success': True})
+    else:
+        return render(request, 'users/verify_email_result.html', {'success': False})
 
 def register_view(request):
     if request.user.is_authenticated:
@@ -13,8 +58,26 @@ def register_view(request):
         form = RegisterForm(request.POST)
         if form.is_valid():
             user = form.save()
+            # Генерируем токен верификации
+            profile = user.profile
+            profile.verification_token = str(uuid.uuid4())
+            profile.save()
+
+            # Формируем ссылку для подтверждения
+            uid = urlsafe_base64_encode(force_bytes(user.pk))
+            from django.urls import reverse
+            verification_link = request.build_absolute_uri(reverse('users:verify_email', kwargs={'uidb64': uid, 'token': profile.verification_token}))
+            # Отправляем письмо
+            send_mail(
+                subject=f'Подтверждение email на {settings.SITE_NAME}',
+                message=f'Здравствуйте, {user.username}!\n\nДля подтверждения вашего email перейдите по ссылке:\n{verification_link}\n\nЕсли вы не регистрировались на сайте, проигнорируйте это сообщение.',
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[user.email],
+                fail_silently=False,
+            )
+
             login(request, user)
-            messages.success(request, 'Регистрация прошла успешно!')
+            messages.success(request, 'Регистрация прошла успешно! На ваш email отправлено письмо для подтверждения.')
             return redirect('listings:index')
     else:
         form = RegisterForm()

@@ -59,6 +59,9 @@ class Listing(models.Model):
             self.save(update_fields=['today_views', 'total_views', 'last_view_date'])
             self.view_logs.create(user=request.user)
 
+    def get_absolute_url(self):
+        from django.urls import reverse
+        return reverse('listings:detail', args=[self.pk])
 
 class ListingImage(models.Model):
     listing = models.ForeignKey(Listing, on_delete=models.CASCADE, related_name='images')
