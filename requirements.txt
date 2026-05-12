@@ -3,5 +3,5 @@ Pillow
 gunicorn
 whitenoise
 requests
-jwt
+PyJWT
 django-allauth

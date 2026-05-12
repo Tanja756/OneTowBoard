@@ -79,6 +79,8 @@ SOCIALACCOUNT_ADAPTER = 'apps.users.adapters.CustomSocialAccountAdapter'
 # Перенаправления после входа/выхода
 LOGIN_REDIRECT_URL = 'listings:index'
 LOGOUT_REDIRECT_URL = 'listings:index'
+LOGIN_URL = '/accounts/login/'
+SOCIALACCOUNT_LOGIN_ON_GET = True
 
 # Client ID и Secret из Google Cloud Console (через переменные окружения)
 SOCIAL_AUTH_GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID')
@@ -95,7 +97,7 @@ MIDDLEWARE = [
     'allauth.account.middleware.AccountMiddleware',
 ]
 
-SITE_ID = 2
+SITE_ID = int(os.environ.get('SITE_ID', '1'))
 
 ROOT_URLCONF = 'config.urls'
 
