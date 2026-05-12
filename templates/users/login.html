@@ -30,7 +30,7 @@
         <p class="mt-2 text-center small">
           <a href="{% url 'users:password_reset' %}">Забыли пароль?</a>
         </p>
-{% if ENABLE_GOOGLE_AUTH %}
+{% if enable_google_auth %}
         <hr>
         <div class="text-center">
           <a href="{% url 'google_login' %}" class="btn btn-outline-danger w-100">
