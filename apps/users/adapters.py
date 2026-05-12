@@ -7,7 +7,6 @@ User = get_user_model()
 class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
     def save_user(self, request, sociallogin, form=None):
         user = super().save_user(request, sociallogin, form)
-        # Гарантированно создаём профиль, если он отсутствует
         Profile.objects.get_or_create(user=user)
         user.profile.email_verified = True
         user.profile.save()
@@ -21,7 +20,6 @@ class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
             try:
                 user = User.objects.get(email=email)
                 sociallogin.connect(request, user)
-                # Убеждаемся, что профиль есть
                 Profile.objects.get_or_create(user=user)
             except User.DoesNotExist:
                 pass

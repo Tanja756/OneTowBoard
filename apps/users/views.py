@@ -168,3 +168,47 @@ def my_listings_view(request):
         'listings': page_obj,
         'status_filter': status_filter,
     })
+
+@login_required
+def complete_social_profile_view(request):
+    profile = request.user.profile
+    need_name = not profile.display_name or not profile.display_name.strip()
+    need_phone = not profile.phone or len(''.join(filter(str.isdigit, profile.phone))) != 11
+    need_city = not profile.city or not profile.city.strip()
+
+    if request.method == 'POST':
+        display_name = request.POST.get('display_name', '').strip()
+        phone_raw = request.POST.get('phone', '')
+        city = request.POST.get('city', '').strip()
+
+        digits = ''.join(filter(str.isdigit, phone_raw))
+
+        # Валидация телефона (обязателен)
+        if len(digits) != 11 or digits[0] != '7':
+            messages.error(request, 'Введите корректный номер телефона (+7 (999) 999-99-99).')
+            return render(request, 'users/social_profile_required.html', {
+                'need_name': need_name,
+                'need_phone': need_phone,
+                'need_city': need_city,
+            })
+
+        if need_name:
+            profile.display_name = display_name if display_name else request.user.username
+
+        profile.phone = digits
+        profile.city = city
+        profile.save()
+
+        # Удаляем флаг из сессии
+        if 'require_profile_completion' in request.session:
+            del request.session['require_profile_completion']
+            request.session.modified = True
+
+        messages.success(request, 'Профиль обновлён!')
+        return redirect('listings:index')
+
+    return render(request, 'users/social_profile_required.html', {
+        'need_name': need_name,
+        'need_phone': need_phone,
+        'need_city': need_city,
+    })

@@ -75,8 +75,6 @@ SOCIALACCOUNT_PROVIDERS = {
     }
 }
 SOCIALACCOUNT_ADAPTER = 'apps.users.adapters.CustomSocialAccountAdapter'
-
-# Перенаправления после входа/выхода
 LOGIN_REDIRECT_URL = 'listings:index'
 LOGOUT_REDIRECT_URL = 'listings:index'
 LOGIN_URL = '/accounts/login/'
@@ -95,9 +93,10 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'allauth.account.middleware.AccountMiddleware',
+    'config.middleware.ProfileCompletionMiddleware',
 ]
 
-SITE_ID = int(os.environ.get('SITE_ID', '1'))
+SITE_ID = 2
 
 ROOT_URLCONF = 'config.urls'
 

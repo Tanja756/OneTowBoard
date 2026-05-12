@@ -16,6 +16,7 @@ urlpatterns = [
     path('resend_verification/', views.resend_verification_email, name='resend_verification'),
 
     path('accounts/', include('allauth.urls')),
+    path('complete-social-profile/', views.complete_social_profile_view, name='complete_social_profile'),
 
     # Смена пароля
     path('password_change/', auth_views.PasswordChangeView.as_view(
