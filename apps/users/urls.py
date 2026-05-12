@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import path, include
 from django.contrib.auth import views as auth_views
 from . import views
 
@@ -14,6 +14,8 @@ urlpatterns = [
     # Верификация почты
     path('verify/<uidb64>/<token>/', views.verify_email_view, name='verify_email'),
     path('resend_verification/', views.resend_verification_email, name='resend_verification'),
+
+    path('accounts/', include('allauth.urls')),
 
     # Смена пароля
     path('password_change/', auth_views.PasswordChangeView.as_view(

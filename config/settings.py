@@ -11,15 +11,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, os.path.join(BASE_DIR, 'apps'))
 
 # ---------- Продакшен-настройки (менять при деплое) ----------
-SITE_NAME = 'Продай или Купи на Раз, Два'                         # Название доски объявлений
-SITE_DESCRIPTION = 'Бесплатная доска объявлений: недвижимость, авто, услуги, работа и многое другое'
-SITE_KEYWORDS = 'доска объявлений, бесплатные объявления, купить, продать, недвижимость, авто, работа'
-SITE_ADDRESS = ''
-SITE_PHONE = ''
-SITE_EMAIL = ''
-SITE_WORKING_HOURS = ''
+SITE_NAME = os.environ.get('SITE_NAME', 'Продай или Купи на Раз, Два')
+SITE_DESCRIPTION = os.environ.get('SITE_DESCRIPTION', 'Бесплатная доска объявлений: недвижимость, авто, услуги, работа и многое другое')
+SITE_KEYWORDS = os.environ.get('SITE_KEYWORDS', 'доска объявлений, бесплатные объявления, купить, продать, недвижимость, авто, работа')
+SITE_ADDRESS = os.environ.get('SITE_ADDRESS', '')
+SITE_PHONE = os.environ.get('SITE_PHONE', '')
+SITE_EMAIL = os.environ.get('SITE_EMAIL', '')
+SITE_WORKING_HOURS = os.environ.get('SITE_WORKING_HOURS', '')
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DJANGO_DEBUG', 'True').lower() == 'true'
+DEBUG = os.environ.get('DJANGO_DEBUG', 'False').lower() == 'true'
 ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
 # SECURITY WARNING: keep the secret key used in production secret!
@@ -42,6 +42,11 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.sites',
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',
     # Наши приложения
     'users',
     'listings',
@@ -50,6 +55,34 @@ INSTALLED_APPS = [
     'search',
 ]
 
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',  # стандартный бэкенд (оставляем)
+    'allauth.account.auth_backends.AuthenticationBackend',  # allauth
+]
+
+# Настройки allauth (актуальные для последней версии)
+ACCOUNT_LOGIN_METHODS = {'email', 'username'}  # вместо устаревшего ACCOUNT_AUTHENTICATION_METHOD
+ACCOUNT_SIGNUP_FIELDS = ['email*', 'username*', 'password1*', 'password2*']  # вместо устаревших ACCOUNT_EMAIL_REQUIRED и ACCOUNT_USERNAME_REQUIRED
+ACCOUNT_EMAIL_VERIFICATION = 'optional'  # или 'mandatory' – по желанию
+ACCOUNT_LOGOUT_REDIRECT_URL = 'listings:index'
+LOGIN_REDIRECT_URL = 'listings:index'
+
+# Провайдер Google
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'SCOPE': ['profile', 'email'],
+        'AUTH_PARAMS': {'access_type': 'online'},
+    }
+}
+SOCIALACCOUNT_ADAPTER = 'apps.users.adapters.CustomSocialAccountAdapter'
+
+# Перенаправления после входа/выхода
+LOGIN_REDIRECT_URL = 'listings:index'
+LOGOUT_REDIRECT_URL = 'listings:index'
+
+# Client ID и Secret из Google Cloud Console (через переменные окружения)
+SOCIAL_AUTH_GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID')
+SOCIAL_AUTH_GOOGLE_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET')
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
@@ -59,7 +92,10 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'allauth.account.middleware.AccountMiddleware',
 ]
+
+SITE_ID = 2
 
 ROOT_URLCONF = 'config.urls'
 
@@ -130,8 +166,8 @@ EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 587))
 EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True').lower() == 'true'
 EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
-DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@example.com')
-TECH_SUPPORT_EMAIL = os.environ.get('TECH_SUPPORT_EMAIL', DEFAULT_FROM_EMAIL)
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', '')
+TECH_SUPPORT_EMAIL = os.environ.get('TECH_SUPPORT_EMAIL', '')
 # Уведомления техподдержке
 NOTIFY_ADMIN_NEW_USER = os.environ.get('NOTIFY_ADMIN_NEW_USER', 'False').lower() == 'true'
 NOTIFY_ADMIN_NEW_LISTING = os.environ.get('NOTIFY_ADMIN_NEW_LISTING', 'False').lower() == 'true'
