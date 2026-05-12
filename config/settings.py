@@ -18,6 +18,7 @@ SITE_ADDRESS = os.environ.get('SITE_ADDRESS', '')
 SITE_PHONE = os.environ.get('SITE_PHONE', '')
 SITE_EMAIL = os.environ.get('SITE_EMAIL', '')
 SITE_WORKING_HOURS = os.environ.get('SITE_WORKING_HOURS', '')
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DJANGO_DEBUG', 'False').lower() == 'true'
 ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
@@ -31,9 +32,14 @@ CSRF_TRUSTED_ORIGINS = os.environ.get(
 ).split(',')
 
 # --------------------- Конец продакшен-настроек ---------------------
+
+# Google OAuth – можно отключить через .env (ENABLE_GOOGLE_AUTH=False)
+ENABLE_GOOGLE_AUTH = os.environ.get('ENABLE_GOOGLE_AUTH', 'True').lower() == 'true'
+
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
+# ---------- Приложения ----------
 INSTALLED_APPS = [
     'whitenoise.runserver_nostatic',
     'django.contrib.admin',
@@ -42,11 +48,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'django.contrib.sites',
-    'allauth',
-    'allauth.account',
-    'allauth.socialaccount',
-    'allauth.socialaccount.providers.google',
+    'django.contrib.sites',                     # обязательно для allauth (но можно оставить и без него, не мешает)
     # Наши приложения
     'users',
     'listings',
@@ -55,34 +57,47 @@ INSTALLED_APPS = [
     'search',
 ]
 
+# Google-авторизация (можно отключить)
+if ENABLE_GOOGLE_AUTH:
+    INSTALLED_APPS += [
+        'allauth',
+        'allauth.account',
+        'allauth.socialaccount',
+        'allauth.socialaccount.providers.google',
+    ]
+
+# ---------- Бекенды аутентификации ----------
 AUTHENTICATION_BACKENDS = [
-    'django.contrib.auth.backends.ModelBackend',  # стандартный бэкенд (оставляем)
-    'allauth.account.auth_backends.AuthenticationBackend',  # allauth
+    'django.contrib.auth.backends.ModelBackend',
 ]
+if ENABLE_GOOGLE_AUTH:
+    AUTHENTICATION_BACKENDS.append('allauth.account.auth_backends.AuthenticationBackend')
 
-# Настройки allauth (актуальные для последней версии)
-ACCOUNT_LOGIN_METHODS = {'email', 'username'}  # вместо устаревшего ACCOUNT_AUTHENTICATION_METHOD
-ACCOUNT_SIGNUP_FIELDS = ['email*', 'username*', 'password1*', 'password2*']  # вместо устаревших ACCOUNT_EMAIL_REQUIRED и ACCOUNT_USERNAME_REQUIRED
-ACCOUNT_EMAIL_VERIFICATION = 'optional'  # или 'mandatory' – по желанию
-ACCOUNT_LOGOUT_REDIRECT_URL = 'listings:index'
-LOGIN_REDIRECT_URL = 'listings:index'
-
-# Провайдер Google
-SOCIALACCOUNT_PROVIDERS = {
-    'google': {
-        'SCOPE': ['profile', 'email'],
-        'AUTH_PARAMS': {'access_type': 'online'},
+# ---------- Настройки allauth ----------
+if ENABLE_GOOGLE_AUTH:
+    ACCOUNT_LOGIN_METHODS = {'email', 'username'}
+    ACCOUNT_SIGNUP_FIELDS = ['email*', 'username*', 'password1*', 'password2*']
+    ACCOUNT_EMAIL_VERIFICATION = 'optional'
+    ACCOUNT_LOGOUT_REDIRECT_URL = 'listings:index'
+    LOGIN_REDIRECT_URL = 'listings:index'
+    LOGOUT_REDIRECT_URL = 'listings:index'
+    LOGIN_URL = '/accounts/login/'
+    SOCIALACCOUNT_LOGIN_ON_GET = True
+    SOCIALACCOUNT_PROVIDERS = {
+        'google': {
+            'SCOPE': ['profile', 'email'],
+            'AUTH_PARAMS': {'access_type': 'online'},
+        }
     }
-}
-SOCIALACCOUNT_ADAPTER = 'apps.users.adapters.CustomSocialAccountAdapter'
-LOGIN_REDIRECT_URL = 'listings:index'
-LOGOUT_REDIRECT_URL = 'listings:index'
-LOGIN_URL = '/accounts/login/'
-SOCIALACCOUNT_LOGIN_ON_GET = True
+    SOCIALACCOUNT_ADAPTER = 'apps.users.adapters.CustomSocialAccountAdapter'
+    # ID приложения Google (из .env)
+    SOCIAL_AUTH_GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID')
+    SOCIAL_AUTH_GOOGLE_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET')
+else:
+    # Если Google выключен, используем стандартный URL входа
+    LOGIN_URL = '/users/login/'
 
-# Client ID и Secret из Google Cloud Console (через переменные окружения)
-SOCIAL_AUTH_GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID')
-SOCIAL_AUTH_GOOGLE_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET')
+# ---------- Middleware ----------
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
@@ -92,11 +107,17 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'allauth.account.middleware.AccountMiddleware',
-    'config.middleware.ProfileCompletionMiddleware',
+    'config.middleware.ProfileCompletionMiddleware',   # всегда проверяем заполненность профиля
 ]
 
-SITE_ID = 2
+if ENABLE_GOOGLE_AUTH:
+    MIDDLEWARE.insert(
+        MIDDLEWARE.index('config.middleware.ProfileCompletionMiddleware'),
+        'allauth.account.middleware.AccountMiddleware'
+    )
+
+# ---------- Остальные настройки ----------
+SITE_ID = int(os.environ.get('SITE_ID', 1))
 
 ROOT_URLCONF = 'config.urls'
 
@@ -112,7 +133,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'categories.context_processors.categories_processor',
-                'config.context_processors.site_settings',   # наш новый процессор
+                'config.context_processors.site_settings',
             ],
         },
     },
@@ -128,18 +149,10 @@ DATABASES = {
 }
 
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
+    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
 LANGUAGE_CODE = 'ru-ru'
@@ -150,7 +163,6 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
-
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
@@ -169,6 +181,7 @@ EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', '')
 TECH_SUPPORT_EMAIL = os.environ.get('TECH_SUPPORT_EMAIL', '')
+
 # Уведомления техподдержке
 NOTIFY_ADMIN_NEW_USER = os.environ.get('NOTIFY_ADMIN_NEW_USER', 'False').lower() == 'true'
 NOTIFY_ADMIN_NEW_LISTING = os.environ.get('NOTIFY_ADMIN_NEW_LISTING', 'False').lower() == 'true'

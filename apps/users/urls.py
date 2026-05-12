@@ -1,5 +1,6 @@
-from django.urls import path, include
+from django.urls import path
 from django.contrib.auth import views as auth_views
+from django.conf import settings
 from . import views
 
 app_name = 'users'
@@ -14,9 +15,6 @@ urlpatterns = [
     # Верификация почты
     path('verify/<uidb64>/<token>/', views.verify_email_view, name='verify_email'),
     path('resend_verification/', views.resend_verification_email, name='resend_verification'),
-
-    path('accounts/', include('allauth.urls')),
-    path('complete-social-profile/', views.complete_social_profile_view, name='complete_social_profile'),
 
     # Смена пароля
     path('password_change/', auth_views.PasswordChangeView.as_view(
@@ -44,4 +42,11 @@ urlpatterns = [
     path('password_reset_complete/', auth_views.PasswordResetCompleteView.as_view(
         template_name='users/password_reset_complete.html'
     ), name='password_reset_complete'),
+
+    # Дозаполнение профиля после соц. входа
+    path('complete-social-profile/', views.complete_social_profile_view, name='complete_social_profile'),
 ]
+
+# Google-авторизация включается только при ENABLE_GOOGLE_AUTH=True
+if getattr(settings, 'ENABLE_GOOGLE_AUTH', False):
+    urlpatterns.append(path('accounts/', include('allauth.urls')))

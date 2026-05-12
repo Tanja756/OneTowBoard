@@ -17,6 +17,7 @@
 
 ### Пользователи
 - Регистрация с выбором типа аккаунта: **Частное лицо** / **Компания**
+- **Вход через Google** (опционально, включается флагом `ENABLE_GOOGLE_AUTH`). После входа запрашиваются недостающие данные (телефон, город, отображаемое имя)
 - Отображаемое имя (если не задано, используется логин)
 - **Смена пароля** через личный кабинет
 - **Восстановление пароля** по email
@@ -104,7 +105,7 @@
 
 ## Быстрый старт (локально)
 
-    bash
+    ```bash
     git clone https://github.com/Tanja756/OneTowBoard.git
     cd OneTowBoard
     python3 -m venv venv
@@ -114,9 +115,7 @@
     python3 manage.py createsuperuser
     python3 manage.py runserver
 
-    Откройте в браузере:
-        Основной сайт: http://127.0.0.1:8000
-        Панель администратора: http://127.0.0.1:8000/admin/
+    Панель администратора: http://127.0.0.1:8000/admin/
 
 ### Запуск в Docker (продакшен)
     docker build -t onetwoboard .
@@ -173,6 +172,11 @@
     DJANGO_ALLOWED_HOSTS=ваш-домен.ru,www.ваш-домен.ru
     DJANGO_CSRF_TRUSTED_ORIGINS=https://ваш-домен.ru,https://www.ваш-домен.ru
     
+    Google OAuth (опционально)
+    ENABLE_GOOGLE_AUTH=True
+    GOOGLE_CLIENT_ID=ваш-client-id.apps.googleusercontent.com
+    GOOGLE_CLIENT_SECRET=ваш-client-secret
+    
     Почтовые настройки
     EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
     EMAIL_HOST=smtp.example.com
@@ -183,7 +187,7 @@
     EMAIL_HOST_PASSWORD=your-password
     DEFAULT_FROM_EMAIL=noreply@your-domain.ru
     TECH_SUPPORT_EMAIL=support@your-domain.ru
-    
+
     Уведомления техподдержке (True/False)
     NOTIFY_ADMIN_NEW_USER=True
     NOTIFY_ADMIN_NEW_LISTING=True
