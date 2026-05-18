@@ -9,7 +9,7 @@
       <!-- Миниатюра -->
       {% with item.images.first as main_image %}
         {% if main_image %}
-          <img src="{{ main_image.image.url }}" class="rounded me-2" width="40" height="40" style="object-fit: cover;" alt="">
+          <img src="{{ main_image.thumbnail_url|default:main_image.image.url }}" class="rounded me-2" width="40" height="40" style="object-fit: cover;" alt="">
         {% else %}
           {% get_category_image item.category as cat_image %}
           {% if cat_image %}

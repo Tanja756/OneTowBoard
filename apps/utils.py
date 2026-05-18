@@ -1,5 +1,6 @@
 import uuid
 import os
+from django.conf import settings
 import logging
 from PIL import Image, UnidentifiedImageError
 from io import BytesIO
@@ -67,3 +68,32 @@ def compress_uploaded_image(image_field, max_dim=850):
         )
     except Exception as e:
         logger.error(f'Сжатие изображения не удалось: {e}')
+
+
+def generate_thumbnail(image_instance, width=400, height=300):
+    if not image_instance.image:
+        return None
+    original_path = image_instance.image.path
+    thumb_dir = os.path.join(settings.MEDIA_ROOT, 'thumbnails')
+    base_name = os.path.basename(original_path)
+    thumb_name = f'{os.path.splitext(base_name)[0]}_thumb.jpg'
+    thumb_path = os.path.join(thumb_dir, thumb_name)
+
+    # Если миниатюра уже существует – сразу возвращаем относительный путь
+    if os.path.exists(thumb_path):
+        return os.path.join('thumbnails', thumb_name)
+
+    # Создаём папку, если её нет
+    os.makedirs(thumb_dir, exist_ok=True)
+
+    try:
+        img = Image.open(original_path)
+        if img.mode in ('RGBA', 'LA', 'P'):
+            img = img.convert('RGB')
+        img.thumbnail((width, height), Image.LANCZOS)
+        img.save(thumb_path, format='JPEG', quality=80, optimize=True)
+    except Exception:
+        print(f">>> generate_thumbnail ERROR: {e}")
+        return None
+
+    return os.path.join('thumbnails', thumb_name)

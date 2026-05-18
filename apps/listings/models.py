@@ -1,12 +1,17 @@
 import uuid
+from utils import generate_thumbnail
 from django.db import models
 from django.contrib.auth.models import User
 from django.db.models.signals import pre_save
+from django.db.models.signals import pre_delete
 from django.dispatch import receiver
 from apps.utils import listing_image_upload_to, compress_uploaded_image
 from categories.models import Category
 from datetime import date
 import logging
+from django.conf import settings
+import os
+
 logger = logging.getLogger(__name__)
 
 def default_external_id():
@@ -86,6 +91,21 @@ class ListingImage(models.Model):
     image = models.ImageField(upload_to=listing_image_upload_to, verbose_name='Изображение')
     is_main = models.BooleanField(default=False, verbose_name='Главное')
 
+    @property
+    def thumbnail_url(self):
+        from apps.utils import generate_thumbnail
+        import logging
+        logger = logging.getLogger('upload')
+        try:
+            thumb_rel = generate_thumbnail(self, width=400, height=300)
+            if thumb_rel:
+                return settings.MEDIA_URL + thumb_rel
+            logger.warning(f"Не удалось создать миниатюру для {self.image.path}")
+        except Exception as e:
+            logger.error(f"Ошибка при создании миниатюры: {e}")
+        # Если миниатюры нет — возвращаем оригинал
+        return self.image.url
+
     def __str__(self):
         return f'Фото для {self.listing.title}'
 
@@ -118,3 +138,13 @@ class ViewLog(models.Model):
 
     def __str__(self):
         return f'{self.user.username} посмотрел {self.listing.title}'
+    
+@receiver(pre_delete, sender=ListingImage)
+def delete_thumbnail(sender, instance, **kwargs):
+    if instance.image:
+        # Определяем путь к миниатюре
+        base_name = os.path.basename(instance.image.path)
+        thumb_name = f'{os.path.splitext(base_name)[0]}_thumb.jpg'
+        thumb_path = os.path.join(settings.MEDIA_ROOT, 'thumbnails', thumb_name)
+        if os.path.exists(thumb_path):
+            os.remove(thumb_path)
