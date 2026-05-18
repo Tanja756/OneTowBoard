@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
 from datetime import date
-from apps.listings.models import Listing
+from listings.models import Listing
 
 class Command(BaseCommand):
     help = 'Завершает объявления, у которых истёк срок'

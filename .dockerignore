@@ -5,8 +5,8 @@ venv
 .git
 *.sqlite3
 media/
-static/
-staticfiles/
+db/
+db.sqlite3
 .env
 *.md
 gmail.env

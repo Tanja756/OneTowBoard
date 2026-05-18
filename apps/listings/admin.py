@@ -34,16 +34,24 @@ class ListingImageInline(admin.TabularInline):
 
 @admin.register(Listing)
 class ListingAdmin(admin.ModelAdmin):
-    list_display = ('title', 'author', 'category', 'price', 'status', 'is_promoted', 'is_sticky', 'is_urgent', 'is_completed', 'expiry_date', 'created_at')
-    list_filter = ('status', 'category', 'is_promoted', 'is_sticky', 'is_urgent', 'is_completed', 'expiry_date', 'created_at')
+    list_display = (
+        'external_id', 'title', 'author', 'category', 'price', 'status',
+        'is_promoted', 'is_sticky', 'is_urgent', 'is_completed',
+        'expiry_date', 'contact_phone', 'created_at',
+    )
+    list_filter = (
+        'status', 'category', 'is_promoted', 'is_sticky', 'is_urgent',
+        'is_completed', 'expiry_date', 'created_at',
+    )
     list_editable = ('status', 'is_promoted', 'is_sticky', 'is_urgent')
+    search_fields = ('title', 'description', 'author__username', 'external_id', 'contact_phone')
     date_hierarchy = 'created_at'
     inlines = [ListingImageInline]
     actions = [make_active, make_inactive, make_moderation]
 
     fieldsets = (
         (None, {
-            'fields': ('title', 'description', 'price')
+            'fields': ('external_id', 'title', 'description', 'price', 'contact_phone'),
         }),
         ('Категория и статус', {
             'fields': ('category', 'status', 'is_promoted', 'is_sticky', 'is_urgent', 'is_completed', 'expiry_date')

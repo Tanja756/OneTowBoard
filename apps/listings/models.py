@@ -1,3 +1,5 @@
+import uuid
+
 from django.db import models
 from django.contrib.auth.models import User
 from django.db.models.signals import pre_save
@@ -5,6 +7,10 @@ from django.dispatch import receiver
 from apps.utils import listing_image_upload_to, compress_uploaded_image
 from categories.models import Category
 from datetime import date
+
+
+def default_external_id():
+    return uuid.uuid4().hex
 
 class Listing(models.Model):
     STATUS_CHOICES = (
@@ -29,6 +35,18 @@ class Listing(models.Model):
     today_views = models.PositiveIntegerField(default=0, verbose_name='Просмотров сегодня')
     last_view_date = models.DateField(blank=True, null=True, verbose_name='Последний просмотр')
     parameters = models.JSONField(default=dict, blank=True, verbose_name='Параметры')
+    external_id = models.CharField(
+        max_length=50,
+        unique=True,
+        default=default_external_id,
+        verbose_name='Внешний ID',
+    )
+    contact_phone = models.CharField(
+        max_length=20,
+        blank=True,
+        default='',
+        verbose_name='Контактный телефон объявления',
+    )
 
     class Meta:
         ordering = ['-created_at']

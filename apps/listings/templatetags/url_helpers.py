@@ -56,6 +56,17 @@ def days_until(expiry_date):
         return 'Истекло'
 
 @register.filter
+def format_phone(value):
+    """Приводит номер телефона к формату +7 (XXX) XXX-XX-XX, если возможно."""
+    if not value:
+        return ''
+    digits = ''.join(filter(str.isdigit, value))
+    if len(digits) == 11 and digits[0] == '7':
+        return f"+7 ({digits[1:4]}) {digits[4:7]}-{digits[7:9]}-{digits[9:11]}"
+    return value
+
+
+@register.filter
 def short_date(d):
     if not d:
         return ''

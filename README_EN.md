@@ -1,10 +1,10 @@
 # OneTwoBoard — Classifieds Board on Django
 
-A modern classifieds board with moderation, hierarchical categories, dynamic parameters and a responsive interface.  
-The project is fully ready for deployment in Docker with HTTPS via Nginx.
+[Русский](README.md)
 
-### Демо
-https://gripol.online
+A modern classifieds board with moderation, hierarchical categories, dynamic parameters, and a responsive interface. Ready for Docker deployment with HTTPS via Nginx.
+
+**Demo:** [gripol.online](https://gripol.online)
 
 ## Tech Stack
 
@@ -12,185 +12,290 @@ https://gripol.online
 - **Django 5.2 (LTS)**
 - **SQLite** (easy to replace with PostgreSQL)
 - **Bootstrap 5.3** (CDN)
-- **Pillow** (image processing)
-- **Gunicorn** + **WhiteNoise** (production)
-- **Docker** (containerization)
+- **Pillow** — image processing
+- **django-allauth** — optional Google sign-in
+- **Gunicorn** + **WhiteNoise** — production
+- **Docker** — containerization
 
 ## Key Features
 
 ### Users
-- Registration with account type selection: **Individual** / **Company**
-- Display name (if not set, login is used)
-- **Password change** via personal account
-- Personal account: profile settings, avatar, contacts, account type change
-- "My listings" section with management (edit, delete, complete)
-- **Mandatory phone number** with input mask `+7 (999) 999-99-99` (server-side validation)
+
+- Registration with account type: **individual** / **company**
+- **Google sign-in** (optional, `ENABLE_GOOGLE_AUTH`); missing profile fields requested after login
+- Display name (falls back to username)
+- **Password change** and **password reset** via email
+- **Email verification** on registration
+- Personal account: profile, avatar, contacts, account type
+- **My listings**: edit, delete, mark as completed
+- **Required phone** with mask `+7 (999) 999-99-99` (server-side validation)
 
 ### Listings
-- Creation with multiple photo upload (main image determined automatically)
-- Moderation: a new listing gets "Pending moderation" status, visible only to author and admin; after approval it becomes available to everyone
-- **Duration**: user selects duration (1 day, 1 week, 2 weeks, 1 month, 1 month by default); expired listings are automatically completed (via cron command)
-- Dynamic parameters depending on selected category (via AJAX)
-- Mandatory category parameters before publishing
-- Detail page: gallery with modal slider (mouse and keyboard navigation), price, views, contacts (phone hidden until "Show phone" click), author city
-- **View counting**: unique authorized user counted once per day (anonymous not counted)
-- Edit and delete listings by author or admin
-- Ability to delete previously uploaded photos and add new ones while editing
-- **Listing completion**: author can mark listing as completed; it disappears from common listings but remains accessible via direct link and in personal account
-- Secure file upload: names generated based on UUID, avoiding Cyrillic issues
-- **Image compression**: all uploaded photos and avatars automatically reduced to 850 px on the long side (keeping proportions)
-- Notification after publishing: "Listing submitted for moderation. It will appear in the feed after approval by a moderator."
 
-### Categories and Parameters
-- Hierarchical category tree (nesting via parent relationship)
-- Interactive category tree when creating listing (accordion, cannot select parent category)
-- Custom parameters for each category (type: select from list or yes/no)
-- Inheritance of parameters from parent categories (child gets all ancestor parameters)
-- Filtering listings by parameters on category page
-- When selecting parent category, listings from it and all subcategories are shown
-- Categories can have their own image, used as placeholder for listings without photos (walking up the parent hierarchy)
+- Multiple photos per listing (main image selected automatically)
+- Moderation: **pending** until admin approval
+- **Expiry duration** (1 day – 1 month); expired listings completed by `expire_listings` (cron)
+- Dynamic category parameters (AJAX), required before publish
+- **External ID** (`external_id`) — unique listing identifier (UUID); used for bulk import create/update
+- **Listing contact phone** (`contact_phone`) — per-listing phone number; takes priority over the author's profile phone in admin and on the detail page
+- Detail page: gallery with slider (mouse and keyboard), formatted price (`15 000 ₽`), views today and total, expiry date
+- Contacts visible only to **authenticated** users; phone hidden until "Show phone" is clicked, displayed as `+7 (999) 999-99-99`
+- Unique view counting for authenticated users (once per day)
+- In listings and "My listings": relative dates ("Today", "Yesterday", "N days ago"), time left ("N days left" / "Expired")
+- Edit, remove photos, **complete** listing as author
+- Safe filenames (UUID), compression to 850 px on the long edge
 
-### Search and Filters
-- Full-text search by title and description (case-insensitive)
-- Price filter (from/to)
-- Sorting: by date (newest/oldest) and by price (cheapest/most expensive)
-- Compact drop-down filter panels in DNS‑shop style
-- Pagination preserving filter and sort parameters
-- Expired listings automatically excluded from results
+### Categories & Search
 
-### Listing Promotion (via admin, later by users)
-- **Sticky** (`is_sticky`): always at the top
-- **Urgent** (`is_urgent`): red "Urgent" badge, urgent listed after sticky
-- **Highlight** (`is_promoted`): yellow background and orange left border on the card
-- **"Recommended" panel** under categories tree (random promoted listings + ordinary)
+- Hierarchical categories with inherited parameters
+- Filter by parameters and price, full-text search
+- Sort by date and price, pagination preserving filters
+- Grid and list view modes
 
-### Interface
-- Fully responsive design with Bootstrap 5
-- Equal height listing cards
-- Breadcrumbs on detail page
-- Modal photo viewer with slide ability
-- Mobile version with optimized header ("New listing" button centered)
-- When creating listing, category and main fields placed left/right on large screens
-- Recommended panel hidden on mobile devices
+### Promotion (admin)
 
-### SEO
-- Unique titles and meta descriptions for all pages
-- Site name, description and keywords set in settings and used in templates
-- Human-readable URLs (slug for categories)
-- `favicon.ico` file linked from static
+- **Sticky** (`is_sticky`), **urgent** (`is_urgent`), **highlight** (`is_promoted`)
+- **Recommended** panel under the category tree
 
-### Admin Panel
-- Manage categories, parameters, listings, images, users
-- Bulk actions: approve, deactivate, send to moderation
-- Preview of images and avatars
-- Customized headers and styles
-- Fields `is_promoted`, `is_sticky`, `is_urgent`, `is_completed`, `expiry_date` available in list and filters
+### Email & Notifications
 
-### Security
-- CSRF protection with trusted origins configured for production
-- Display name validation (email and phone numbers disallowed)
-- Mandatory CSRF token check for all POST forms
-- Long title overflow protection (`word-break`, `overflow-wrap`)
+- SMTP via environment variables (console backend in development)
+- Optional support notifications (`NOTIFY_ADMIN_NEW_USER`, `NOTIFY_ADMIN_NEW_LISTING`)
+
+### Admin & Security
+
+- Bulk listing actions (approve, deactivate, send to moderation), image previews
+- Search listings by title, description, author, **external ID**, and **contact phone**
+- User profiles show **email verification** status
+- CSRF protection, display name validation, duplicate form protection (one-time token)
 
 ## Quick Start (Local)
 
-    bash
-    git clone https://github.com/Tanja756/OneTowBoard.git
-    cd OneTowBoard
-    python3 -m venv venv
-    source venv/bin/activate      # Windows: venv\Scripts\activate
-    pip install -r requirements.txt
-    python3 manage.py migrate
-    python3 manage.py createsuperuser
-    python3 manage.py runserver
+```bash
+git clone https://github.com/Tanja756/OneTowBoard.git
+cd OneTowBoard
+python3 -m venv venv
+source venv/bin/activate          # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py createsuperuser
+python manage.py runserver
+```
 
-    Open in browser:
-        Main site: http://127.0.0.1:8000
-        Admin panel: http://127.0.0.1:8000/admin/
-    To access from other devices on local network:
-    python3 manage.py runserver 0.0.0.0:8000
+- Site: http://127.0.0.1:8000/
+- Admin: http://127.0.0.1:8000/admin/
 
-### Docker Deployment (Production)
-    docker build -t onetwoboard .
-    docker run -d \
-        --name onetwoboard \
-        -p 8000:8000 \
-        -v /путь/к/db:/app/db \
-        -v /путь/к/media:/app/media \
-        -v /путь/к/static:/app/staticfiles \
-        --env-file .env \
-        onetwoboard
-    docker exec -it onetwoboard python manage.py createsuperuser
+Access from other devices on the local network:
 
-### Nginx Configuration (HTTPS example)
-    server {
-        listen 80;
-        server_name your-domain.ru;
-        return 301 https://$host$request_uri;
+```bash
+python manage.py runserver 0.0.0.0:8000
+```
+
+## Docker (Production)
+
+Build:
+
+```bash
+docker build -t onetwoboard .
+```
+
+Run — only **`.env`**, a **database** directory, and a **media** directory are required:
+
+```bash
+mkdir -p ./data/db ./data/media
+
+docker run -d \
+  --name onetwoboard \
+  -p 8000:8000 \
+  --env-file .env \
+  -v "$(pwd)/data/db:/data/db" \
+  -v "$(pwd)/data/media:/data/media" \
+  onetwoboard
+
+docker exec -it onetwoboard python manage.py createsuperuser
+```
+
+### Inside the container
+
+| Path | Purpose |
+|------|---------|
+| `/data/db/db.sqlite3` | SQLite database (host volume) |
+| `/data/media/` | User uploads (host volume) |
+| `/app/staticfiles/` | Collected static files (`collectstatic`) |
+| `/app/static` | Symlink to `staticfiles` (for Nginx and a single path) |
+
+Defaults: timezone **Europe/Moscow (UTC+3)**; WhiteNoise serves static files via Gunicorn.
+
+`expire_listings` runs via cron **daily at 03:00** — set `CRON_EXPIRE_SCHEDULE=0 3 * * *` in `.env`.
+
+Manual run:
+
+```bash
+docker exec onetwoboard python manage.py expire_listings
+```
+
+## Nginx (HTTPS Example)
+
+```nginx
+server {
+    listen 80;
+    server_name example.com;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    server_name example.com;
+
+    ssl_certificate     /etc/letsencrypt/live/example.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/example.com/privkey.pem;
+
+    client_max_body_size 20M;
+
+    # In container: /app/static -> staticfiles (symlink)
+    location /static/ {
+        alias /path/to/app/static/;
+        expires 30d;
+        add_header Cache-Control "public";
     }
-    
-    server {
-        listen 443 ssl;
-        server_name your-domain.ru;
-    
-        ssl_certificate /etc/letsencrypt/live/your-domain.ru/fullchain.pem;
-        ssl_certificate_key /etc/letsencrypt/live/your-domain.ru/privkey.pem;
-    
-        client_max_body_size 20M;
-    
-        location /static/ {
-            alias /path/to/staticfiles/;
-            expires 30d;
-            add_header Cache-Control "public";
-        }
-    
-        location /media/ {
-            alias /path/to/media/;
-            expires 30d;
-            add_header Cache-Control "public";
-        }
-    
-        location / {
-            proxy_pass http://127.0.0.1:8000;
-            proxy_set_header Host $host;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto $scheme;
-        }
+
+    location /media/ {
+        alias /path/to/data/media/;
+        expires 30d;
+        add_header Cache-Control "public";
     }
 
-### Environment Variables (.env)
-    DJANGO_SECRET_KEY=your-reliable-secret-key
-    DJANGO_DEBUG=False
-    DJANGO_ALLOWED_HOSTS=your-domain.ru,www.your-domain.ru
-    DJANGO_CSRF_TRUSTED_ORIGINS=https://your-domain.ru,https://www.your-domain.ru
+    location / {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
 
+## Environment Variables (`.env`)
 
-### Project Structure
-    OneTwoBoard/
-    ├── config/                    # Django settings (settings, urls, wsgi, asgi)
-    ├── apps/
-    │   ├── users/                 # Users and profiles
-    │   ├── listings/              # Listings, images, ViewLog model
-    │   ├── categories/            # Categories, parameters, template tags
-    │   ├── search/                # Search and filtering
-    │   └── ratings/               # Placeholder for future ratings
-    ├── templates/                 # HTML templates (includes and subfolders)
-    ├── static/                    # Static files (CSS, images, favicon.ico)
-    ├── media/                     # User-uploaded files (avatars, photos)
-    ├── db/                        # SQLite database file (production)
-    ├── manage.py
-    ├── requirements.txt
-    ├── Dockerfile
-    ├── entrypoint.sh
-    ├── crontab.txt
-    ├── .env.example
-    └── README.md
+Create a `.env` file in the project root:
 
-### Future Plans
-    Favorites (bookmarks)
-    Private messaging between sellers and buyers
-    Ratings and reviews
-    Email notifications
-    Full-text search (when migrating to PostgreSQL)
-    Advertising banners
+```env
+DJANGO_SECRET_KEY=your-secret-key
+DJANGO_DEBUG=False
+DJANGO_ALLOWED_HOSTS=example.com,www.example.com
+DJANGO_CSRF_TRUSTED_ORIGINS=https://example.com,https://www.example.com
+
+# Site (SEO, header, footer)
+SITE_NAME=OneTwoBoard
+SITE_DESCRIPTION=Free classifieds board
+SITE_KEYWORDS=classifieds, buy, sell
+
+# Google OAuth (optional)
+ENABLE_GOOGLE_AUTH=True
+GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your-client-secret
+
+# Email
+EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
+EMAIL_HOST=smtp.example.com
+EMAIL_PORT=587
+EMAIL_USE_TLS=True
+EMAIL_HOST_USER=noreply@example.com
+EMAIL_HOST_PASSWORD=your-password
+DEFAULT_FROM_EMAIL=noreply@example.com
+TECH_SUPPORT_EMAIL=support@example.com
+
+# Support notifications
+NOTIFY_ADMIN_NEW_USER=False
+NOTIFY_ADMIN_NEW_LISTING=False
+
+# Docker (optional)
+TZ=Europe/Moscow
+CRON_EXPIRE_SCHEDULE=0 3 * * *
+# DJANGO_DB_DIR=/data/db
+# DJANGO_MEDIA_ROOT=/data/media
+```
+
+## Cron (without Docker)
+
+Daily expiry check (example at 03:00):
+
+```cron
+0 3 * * * cd /path/to/OneTowBoard && /path/to/venv/bin/python manage.py expire_listings >> /var/log/onetwoboard_expire.log 2>&1
+```
+
+## Management Commands
+
+| Command | Description |
+|---------|----------|
+| `python manage.py expire_listings` | Complete listings past their expiry date |
+| `python manage.py import_listings <dir>` | Bulk import/update listings from folders |
+
+### Import listings (`import_listings`)
+
+Each subfolder in `<dir>` is one listing; the folder name becomes `external_id`. Re-running the command **updates** existing records by that ID.
+
+Folder structure:
+
+```
+12345/                    # external_id
+├── title.txt             # required; prefix like "№868137 - " is stripped automatically
+├── description.txt       # optional
+├── price.txt             # optional; first number is extracted
+├── phone.txt             # listing contact phone
+├── category.txt          # category slug
+├── params.json           # category parameters (JSON)
+├── *.jpg / *.png         # photos (files starting with phone.* are ignored)
+```
+
+Imported listings are set to `active`, **7-day** expiry, and a random publish time on yesterday. Author is the first superuser in the database.
+
+```bash
+python manage.py import_listings /path/to/data
+python manage.py import_listings /path/to/data --category electronics
+python manage.py import_listings /path/to/data --param deal_type sale --param condition used
+```
+
+## Getting Started
+
+1. Log in to the admin panel and create categories (and parameters if needed).
+2. Register a test user and submit a listing.
+3. Approve the listing in the admin.
+4. Set up cron or use Docker with built-in cron.
+
+## Project Structure
+
+```
+OneTwoBoard/
+├── config/                 # settings, urls, wsgi, middleware
+├── apps/
+│   ├── users/              # users, profiles, OAuth
+│   ├── listings/           # listings, images, views
+│   ├── categories/         # categories and parameters
+│   ├── search/             # search and filtering
+│   └── ratings/            # ratings placeholder
+├── templates/
+├── static/
+├── media/
+├── db/                     # SQLite (production)
+├── manage.py
+├── requirements.txt
+├── scripts/run_expire.sh   # cron: expire_listings
+├── Dockerfile
+├── entrypoint.sh
+├── README.md
+└── README_EN.md
+```
+
+## Roadmap
+
+- Favorites (bookmarks)
+- Private messaging
+- Ratings and reviews
+- Extended email notifications
+- Full-text search (PostgreSQL)
+- Advertising banners
+
+## License
+
+[MIT](LICENSE)

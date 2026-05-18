@@ -11,3 +11,5 @@ class ProfileAdmin(admin.ModelAdmin):
     def user_email(self, obj):
         return obj.user.email
     user_email.short_description = 'Email'
+    
+    

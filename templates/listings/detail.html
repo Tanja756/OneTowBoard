@@ -117,15 +117,24 @@
 </div>
           </div>
 
-          {% if listing.author.profile.phone %}
+          {% if listing.contact_phone %}
             <button id="showPhoneBtn" class="btn btn-success w-100 mb-2" onclick="showPhone()">
               📞 Показать телефон
             </button>
-<p id="phoneNumber" class="fw-bold text-success mb-2" style="display: none;">
-    {{ listing.author.profile.get_formatted_phone }}
-</p>
+            <p id="phoneNumber" class="fw-bold text-success mb-2" style="display: none;">
+              {{ listing.contact_phone|format_phone }}
+            </p>
           {% else %}
-            <p class="text-muted small">Телефон не указан</p>
+            {% if listing.author.profile.phone %}
+              <button id="showPhoneBtn" class="btn btn-success w-100 mb-2" onclick="showPhone()">
+                📞 Показать телефон
+              </button>
+              <p id="phoneNumber" class="fw-bold text-success mb-2" style="display: none;">
+                {{ listing.author.profile.get_formatted_phone }}
+              </p>
+            {% else %}
+              <p class="text-muted small">Телефон не указан</p>
+            {% endif %}
           {% endif %}
         </div>
       </div>

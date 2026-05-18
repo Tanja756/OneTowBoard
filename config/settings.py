@@ -141,10 +141,13 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
+_db_dir = os.environ.get('DJANGO_DB_DIR', os.path.join(BASE_DIR, 'db'))
+os.makedirs(_db_dir, exist_ok=True)
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db', 'db.sqlite3'),
+        'NAME': os.path.join(_db_dir, 'db.sqlite3'),
     }
 }
 
@@ -156,7 +159,7 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 LANGUAGE_CODE = 'ru-ru'
-TIME_ZONE = 'Europe/Moscow'
+TIME_ZONE = os.environ.get('TZ', 'Europe/Moscow')
 USE_I18N = True
 USE_L10N = True
 USE_TZ = True
@@ -164,7 +167,9 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+_media_root = os.environ.get('DJANGO_MEDIA_ROOT')
+MEDIA_ROOT = Path(_media_root) if _media_root else BASE_DIR / 'media'
+os.makedirs(MEDIA_ROOT, exist_ok=True)
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
