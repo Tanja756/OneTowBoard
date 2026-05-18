@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
-{% block title %}{{ listing.title }} — {{ site_name }}{% endblock %}
-{% block description %}{{ listing.description|truncatechars:160 }} — цена, фото, контакты продавца на {{ site_name }}{% endblock %}
+{% block title %}{{ listing.title }}{% if listing.author.profile.city %} в {{ listing.author.profile.city }}{% endif %} — {{ site_name }}{% endblock %}
+{% block description %}{{ listing.description|truncatechars:160 }}{% if listing.author.profile.city %} в {{ listing.author.profile.city }}{% endif %} на {{ site_name }}{% endblock %}
 
 {% load static %}
 {% load url_helpers %}

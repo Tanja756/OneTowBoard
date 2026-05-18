@@ -48,7 +48,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'django.contrib.sites',                     # обязательно для allauth (но можно оставить и без него, не мешает)
+    'django.contrib.sites',
+    'django.contrib.sitemaps',
     # Наши приложения
     'users',
     'listings',
