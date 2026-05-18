@@ -20,9 +20,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# Убираем хостовый symlink static; после collectstatic entrypoint создаст static -> staticfiles
-RUN rm -f /app/static \
-    && mkdir -p /data/db /data/media /app/staticfiles /var/log /etc/onetwoboard \
+RUN mkdir -p /data/db /data/media /app/staticfiles /var/log /etc/onetwoboard \
     && chmod +x entrypoint.sh scripts/run_expire.sh
 
 VOLUME ["/data/db", "/data/media"]

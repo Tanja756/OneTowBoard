@@ -41,11 +41,5 @@ if [ -L /app/static ]; then
 fi
 python manage.py collectstatic --noinput
 
-echo "=== Ссылка static -> staticfiles ==="
-if [ -e /app/static ] && [ ! -L /app/static ]; then
-    rm -rf /app/static
-fi
-ln -sfn /app/staticfiles /app/static
-
 echo "=== Запускаем Gunicorn ==="
 exec gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 3
