@@ -1,9 +1,12 @@
 import uuid
 import os
-from PIL import Image
+import logging
+from PIL import Image, UnidentifiedImageError
 from io import BytesIO
 from django.core.files.uploadedfile import InMemoryUploadedFile
 import sys
+
+logger = logging.getLogger(__name__)
 
 def safe_upload_to(instance, filename, subfolder):
     """Генерирует уникальное имя: <subfolder>/<uuid>.<ext>"""
@@ -22,49 +25,45 @@ def category_image_upload_to(instance, filename):
 
 def compress_uploaded_image(image_field, max_dim=850):
     """
-    Сжимает изображение в image_field (FileField/ImageField) при превышении max_dim по большей стороне.
-    Заменяет содержимое файла оптимизированным вариантом.
+    Безопасно сжимает изображение. При ошибке оставляет оригинал.
     """
-    # Открываем изображение с помощью Pillow
-    img = Image.open(image_field.file)
-    # Если формат не поддерживает прозрачность при сохранении в JPEG, конвертируем
-    if img.mode in ('RGBA', 'LA', 'P') and img.format != 'GIF':
-        # Конвертируем в RGB для JPEG
-        if img.format != 'PNG':  # PNG оставим как есть, он поддерживает прозрачность
-            img = img.convert('RGB')
-    
-    width, height = img.size
-    if max(width, height) <= max_dim:
-        return  # не требуется сжатие
+    try:
+        img = Image.open(image_field.file)
+        # Если формат не поддерживает прозрачность при сохранении в JPEG, конвертируем
+        if img.mode in ('RGBA', 'LA', 'P') and img.format != 'GIF':
+            if img.format != 'PNG':
+                img = img.convert('RGB')
+        width, height = img.size
+        if max(width, height) <= max_dim:
+            return  # не требуется сжатие
 
-    # Вычисляем новые размеры с сохранением пропорций
-    if width > height:
-        new_width = max_dim
-        new_height = int(height * (max_dim / width))
-    else:
-        new_height = max_dim
-        new_width = int(width * (max_dim / height))
+        # Вычисляем новые размеры с сохранением пропорций
+        if width > height:
+            new_width = max_dim
+            new_height = int(height * (max_dim / width))
+        else:
+            new_height = max_dim
+            new_width = int(width * (max_dim / height))
 
-    img = img.resize((new_width, new_height), Image.LANCZOS)
+        img = img.resize((new_width, new_height), Image.LANCZOS)
 
-    # Сохраняем в BytesIO
-    output = BytesIO()
-    # Определяем формат сохранения (JPEG для RGB, PNG для остальных)
-    if img.mode == 'RGB':
-        img.save(output, format='JPEG', quality=85, optimize=True)
-    else:
-        img.save(output, format='PNG', optimize=True)
-    output.seek(0)
+        output = BytesIO()
+        if img.mode == 'RGB':
+            img.save(output, format='JPEG', quality=85, optimize=True)
+        else:
+            img.save(output, format='PNG', optimize=True)
+        output.seek(0)
 
-    # Заменяем файл в поле
-    image_field.save(
-        image_field.name,
-        InMemoryUploadedFile(
-            output,
-            'ImageField',
+        image_field.save(
             image_field.name,
-            'image/jpeg' if img.mode == 'RGB' else 'image/png',
-            sys.getsizeof(output),
-            None
+            InMemoryUploadedFile(
+                output,
+                'ImageField',
+                image_field.name,
+                'image/jpeg' if img.mode == 'RGB' else 'image/png',
+                sys.getsizeof(output),
+                None
+            )
         )
-    )
+    except Exception as e:
+        logger.error(f'Сжатие изображения не удалось: {e}')

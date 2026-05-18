@@ -5,11 +5,16 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.core.paginator import Paginator
+from django.db import transaction, IntegrityError
 from django.db.models import F, Q
 from .models import Listing, ListingImage
 from .forms import ListingForm
 from categories.models import Category
 from datetime import date, timedelta
+import logging
+from apps.utils import compress_uploaded_image
+
+logger = logging.getLogger('upload')
 
 def index_view(request):
     view_mode = request.GET.get('view')
@@ -106,10 +111,8 @@ def create_listing_view(request):
         listing = form.save(commit=False)
         listing.author = request.user
         listing.category = category
-        # Вычисляем срок окончания
         duration_days = int(form.cleaned_data['duration'])
         listing.expiry_date = date.today() + timedelta(days=duration_days)
-        # Параметры категории
         param_data = {}
         for key, value in request.POST.items():
             if key.startswith('param_'):
@@ -118,17 +121,43 @@ def create_listing_view(request):
                     param_data[slug] = value
         listing.parameters = param_data
         listing.save()
-
+    
         images = request.FILES.getlist('images')
-        for img in images:
-            ListingImage.objects.create(listing=listing, image=img)
-
-        # Удаляем использованный токен
+        logger.info(f'Начинаю загрузку {len(images)} изображений для объявления {listing.pk}')
+    
+        try:
+            with transaction.atomic():
+                for idx, img in enumerate(images, start=1):
+                    logger.debug(f'Получен файл: {img.name}, размер: {img.size} байт')
+                    if img.size > 10 * 1024 * 1024:
+                        raise ValueError(f'Файл {img.name} превышает 10 МБ')
+                    listing_image = ListingImage(listing=listing, image=img)
+                    listing_image.save()
+                    logger.info(f'Изображение {idx} сохранено успешно')
+        except IntegrityError as e:
+            logger.error(f'Ошибка целостности БД: {e}')
+            messages.error(request, 'Не удалось сохранить фотографии. Попробуйте ещё раз.')
+            return render(request, 'listings/create.html', {
+                'form': form,
+                'selected_category_slug': '',
+                'form_token': request.session.get('form_token', ''),
+            })
+        except Exception as e:
+            logger.exception(f'Неизвестная ошибка при загрузке изображений: {e}')
+            messages.error(request, 'Ошибка при загрузке фотографий.')
+            return render(request, 'listings/create.html', {
+                'form': form,
+                'selected_category_slug': '',
+                'form_token': request.session.get('form_token', ''),
+            })
+    
+        # Удаляем токен и завершаем
         if 'form_token' in request.session:
             del request.session['form_token']
             request.session.modified = True
-
+    
         messages.success(request, 'Объявление отправлено на модерацию. Оно появится в ленте после проверки модератором.')
+        logger.info(f'Объявление {listing.pk} успешно создано')
         return redirect('listings:index')
     else:
         # Если форма невалидна, генерируем новый токен
@@ -178,8 +207,22 @@ def edit_listing_view(request, pk):
 
             # Новые изображения
             images = request.FILES.getlist('images')
-            for img in images:
-                ListingImage.objects.create(listing=listing, image=img)
+            try:
+                with transaction.atomic():
+                    for img in images:
+                        ListingImage.objects.create(listing=listing, image=img)
+            except IntegrityError:
+                messages.error(request, 'Не удалось сохранить фотографии. Попробуйте ещё раз.')
+                request.session['form_token'] = str(uuid.uuid4())
+                return render(request, 'listings/edit.html', {
+                    'form': form,
+                    'listing': listing,
+                    'existing_images': listing.images.all(),
+                    'existing_params_json': json.dumps(listing.parameters) if listing.parameters else '{}',
+                    'parameters': list(listing.category.get_all_parameters().values()) if listing.category else [],
+                    'param_values': listing.parameters or {},
+                    'form_token': request.session['form_token'],
+                })
 
             # Обновляем токен после успешного сохранения
             request.session['form_token'] = str(uuid.uuid4())

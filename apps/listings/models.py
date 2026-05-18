@@ -1,5 +1,4 @@
 import uuid
-
 from django.db import models
 from django.contrib.auth.models import User
 from django.db.models.signals import pre_save
@@ -7,7 +6,8 @@ from django.dispatch import receiver
 from apps.utils import listing_image_upload_to, compress_uploaded_image
 from categories.models import Category
 from datetime import date
-
+import logging
+logger = logging.getLogger(__name__)
 
 def default_external_id():
     return uuid.uuid4().hex
@@ -90,15 +90,19 @@ class ListingImage(models.Model):
         return f'Фото для {self.listing.title}'
 
     def save(self, *args, **kwargs):
-        if self.pk is None:
-            compress_uploaded_image(self.image)
-        else:
-            try:
-                old_instance = ListingImage.objects.get(pk=self.pk)
-                if old_instance.image != self.image:
+        try:
+            if self.pk is None:
+                if self.image:
                     compress_uploaded_image(self.image)
-            except ListingImage.DoesNotExist:
-                compress_uploaded_image(self.image)
+            else:
+                try:
+                    old = ListingImage.objects.get(pk=self.pk)
+                    if old.image != self.image and self.image:
+                        compress_uploaded_image(self.image)
+                except ListingImage.DoesNotExist:
+                    pass
+        except Exception as e:
+            logger.error(f'Ошибка при сжатии изображения: {e}')
         super().save(*args, **kwargs)
 
 

@@ -191,3 +191,35 @@ TECH_SUPPORT_EMAIL = os.environ.get('TECH_SUPPORT_EMAIL', '')
 # Уведомления техподдержке
 NOTIFY_ADMIN_NEW_USER = os.environ.get('NOTIFY_ADMIN_NEW_USER', 'False').lower() == 'true'
 NOTIFY_ADMIN_NEW_LISTING = os.environ.get('NOTIFY_ADMIN_NEW_LISTING', 'False').lower() == 'true'
+
+# ---------- Логирование ----------
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'file_upload': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(BASE_DIR, 'logs', 'upload.log'),
+            'formatter': 'verbose',
+        },
+        'console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+    },
+    'loggers': {
+        'upload': {
+            'handlers': ['file_upload', 'console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+    },
+}
