@@ -69,6 +69,16 @@ A modern classifieds board with moderation, hierarchical categories, dynamic par
 - User profiles show **email verification** status
 - CSRF protection, display name validation, duplicate form protection (one-time token)
 
+### SEO & Indexing
+
+- The listing page `<title>` automatically includes the **author's city** when set — better local search visibility (e.g. “Bike for sale in Grigoropolisskaya”)
+- The listing meta `description` also includes the city when available
+- **`/sitemap.xml`** is generated automatically (Django sitemaps) and includes:
+  - all **active**, non-completed listings (`changefreq: daily`)
+  - all **categories** (`changefreq: weekly`)
+  - the **home** page (`changefreq: weekly`, priority 1.0)
+- Ready to submit to [Google Search Console](https://search.google.com/search-console) and [Yandex Webmaster](https://webmaster.yandex.ru/) right after deploy
+
 ## Quick Start (Local)
 
 ```bash
@@ -216,6 +226,63 @@ CRON_EXPIRE_SCHEDULE=0 3 * * *
 # DJANGO_MEDIA_ROOT=/data/media
 ```
 
+See [Sign in with Google](#sign-in-with-google-oauth-20) below for full OAuth setup.
+
+## Sign in with Google (OAuth 2.0)
+
+### Enabling
+
+Google sign-in is controlled by `ENABLE_GOOGLE_AUTH` in `.env`:
+
+```env
+ENABLE_GOOGLE_AUTH=True
+```
+
+### Setup
+
+1. **Create a project** in [Google Cloud Console](https://console.cloud.google.com/).
+
+2. **OAuth consent screen** (APIs & Services → OAuth consent screen):
+   - choose **External**;
+   - fill in app name, support email, logo;
+   - add your domain (e.g. `gripol.online`) and `localhost` to authorized domains.
+
+3. **OAuth 2.0 Client ID** (Credentials → Create Credentials → OAuth client ID):
+   - application type: **Web application**;
+   - **Authorized redirect URIs**:
+     - `https://your-domain/accounts/google/login/callback/`
+     - `http://127.0.0.1:8000/accounts/google/login/callback/` (local development)
+   - save **Client ID** and **Client Secret**.
+
+4. **`.env` variables:**
+
+```env
+ENABLE_GOOGLE_AUTH=True
+GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your-client-secret
+SITE_ID=1
+```
+
+5. **Admin panel** (`/admin/`):
+   - **Sites** — add your domain (e.g. `gripol.online`);
+   - **Social applications** — provider **Google**, Client ID and Secret from Cloud Console, link to the site.
+
+6. **Restart** the server or container. “Sign in with Google” buttons appear on login and registration pages.
+
+### Disabling
+
+```env
+ENABLE_GOOGLE_AUTH=False
+```
+
+Restart the app. Google buttons disappear and django-allauth is fully disabled.
+
+### Notes
+
+- On first Google sign-in, users must complete **display name**, **phone**, and **city** if missing — otherwise the site blocks further use.
+- Accounts are linked by email automatically.
+- CSRF and sessions work as usual.
+
 ## Cron (without Docker)
 
 Daily expiry check (example at 03:00):
@@ -287,9 +354,12 @@ OneTwoBoard/
 └── README_EN.md
 ```
 
+## In Development
+
+- **Favorites** — save listings to bookmarks, section in the personal account
+
 ## Roadmap
 
-- Favorites (bookmarks)
 - Private messaging
 - Ratings and reviews
 - Extended email notifications

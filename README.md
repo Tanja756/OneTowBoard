@@ -61,6 +61,16 @@
 
 - CSRF, валидация отображаемого имени, одноразовый токен форм
 
+### SEO и индексация
+
+- В заголовок страницы объявления (`<title>`) автоматически добавляется **город автора**, если он указан. Это повышает видимость в локальной выдаче (например, «Продам велосипед в Григорополисской»)
+- Мета-описание (`description`) страницы объявления также учитывает город
+- Карта сайта **`/sitemap.xml`** генерируется автоматически (Django sitemaps) и содержит:
+  - все **активные** незавершённые объявления (`changefreq: daily`)
+  - все **категории** (`changefreq: weekly`)
+  - **главную** страницу (`changefreq: weekly`, приоритет 1.0)
+- Sitemap готов к отправке в [Google Search Console](https://search.google.com/search-console) и [Яндекс.Вебмастер](https://webmaster.yandex.ru/) сразу после деплоя
+
 ## Быстрый старт (локально)
 
 ```bash
@@ -165,6 +175,63 @@ TZ=Europe/Moscow
 CRON_EXPIRE_SCHEDULE=0 3 * * *
 ```
 
+Подробная настройка Google — в разделе [Вход через Google](#вход-через-google-oauth-20) ниже.
+
+## Вход через Google (OAuth 2.0)
+
+### Включение
+
+Google-авторизация управляется флагом `ENABLE_GOOGLE_AUTH` в `.env`:
+
+```env
+ENABLE_GOOGLE_AUTH=True
+```
+
+### Настройка
+
+1. **Создайте проект** в [Google Cloud Console](https://console.cloud.google.com/) (новый или существующий).
+
+2. **Экран согласия OAuth** (APIs & Services → OAuth consent screen):
+   - тип **External**;
+   - заполните название приложения, email поддержки, логотип;
+   - в разрешённые домены добавьте ваш домен (например, `gripol.online`) и `localhost`.
+
+3. **OAuth 2.0 Client ID** (Credentials → Create Credentials → OAuth client ID):
+   - тип приложения: **Web application**;
+   - **Authorized redirect URIs**:
+     - `https://ваш-домен/accounts/google/login/callback/`
+     - `http://127.0.0.1:8000/accounts/google/login/callback/` (локальная разработка)
+   - сохраните **Client ID** и **Client Secret**.
+
+4. **Переменные в `.env`:**
+
+```env
+ENABLE_GOOGLE_AUTH=True
+GOOGLE_CLIENT_ID=ваш-client-id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=ваш-client-secret
+SITE_ID=1
+```
+
+5. **Сайт и социальное приложение в админке** (`/admin/`):
+   - **Sites** — сайт с доменом проекта (например, `gripol.online`);
+   - **Social applications** — провайдер **Google**, Client ID и Secret из Cloud Console, привязка к созданному сайту.
+
+6. **Перезапустите** сервер или контейнер. На страницах входа и регистрации появятся кнопки «Войти через Google» / «Зарегистрироваться через Google».
+
+### Отключение
+
+```env
+ENABLE_GOOGLE_AUTH=False
+```
+
+Перезапустите приложение. Кнопки Google исчезнут, django-allauth отключится.
+
+### Важно
+
+- При первом входе через Google нужно заполнить **отображаемое имя**, **телефон** и **город** (если не были указаны ранее) — без этого сайт не даст продолжить работу.
+- Связывание аккаунтов по email происходит автоматически.
+- CSRF и сессии работают в штатном режиме.
+
 ## Команды управления
 
 | Команда | Описание |
@@ -194,7 +261,7 @@ python manage.py import_listings ./data --param deal_type sale
 
 ```
 OneTwoBoard/
-├── config/                 # settings, urls, middleware
+├── config/                 # settings, urls, sitemaps, middleware
 ├── apps/
 │   ├── users/              # профили, OAuth
 │   ├── listings/           # объявления, фото, просмотры, import/expire
