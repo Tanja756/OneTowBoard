@@ -135,6 +135,10 @@
                   <br>
                   <span class="text-secondary">✓ {{ author_completed_count }} завершённых</span>
                 </div>
+                <!-- Рейтинг автора -->
+                <div class="mt-2">
+                  {% include 'ratings/star_rating.html' with rated_user=listing.author average_rating=average_rating rating_count=rating_count my_rating=my_rating %}
+                </div>
               </div>
             </div>
 

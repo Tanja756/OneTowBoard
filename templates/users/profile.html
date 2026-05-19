@@ -36,6 +36,20 @@
             <p class="badge bg-info mt-2">
               {% if user.profile.profile_type == 'company' %}Компания{% else %}Частное лицо{% endif %}
             </p>
+<!-- Рейтинг пользователя (только чтение) -->
+<div class="mt-2 small">
+  <div class="d-flex align-items-center justify-content-center gap-1">
+    {% for i in "12345" %}
+      <span style="font-size: 1.0rem; color: {% if profile_rating_avg and forloop.counter0 < profile_rating_avg %}#f5b342{% else %}#ddd{% endif %};">&starf;</span>
+    {% endfor %}
+    {% if profile_rating_avg %}
+      <span class="fw-bold ms-1">{{ profile_rating_avg }}</span>
+    {% else %}
+      <span class="text-muted ms-1">0.0</span>
+    {% endif %}
+    <span class="text-muted">({{ profile_rating_count }}{% if profile_rating_count == 1 %} оценка{% elif profile_rating_count >= 2 and profile_rating_count <= 4 %} оценки{% else %} оценок{% endif %})</span>
+  </div>
+</div>
 <hr>
 <div class="text-center mt-3">
   <a href="{% url 'users:password_change' %}" class="btn btn-outline-secondary btn-sm">Сменить пароль</a>

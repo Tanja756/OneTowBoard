@@ -1,0 +1,81 @@
+{% load static %}
+{% if rated_user %}
+<div class="star-rating"
+     data-username="{{ rated_user.username }}"
+     data-average="{{ average_rating|default:'' }}"
+     data-count="{{ rating_count|default:0 }}"
+     data-my-rating="{{ my_rating|default:'' }}">
+  <div class="stars-display d-flex align-items-center gap-1">
+    {% for i in "12345" %}
+      <span class="star {% if my_rating and i|add:0 <= my_rating %}active{% endif %}"
+            data-value="{{ i }}"
+            {% if user.is_authenticated and user.profile.email_verified and user.username != rated_user.username %}
+            onclick="rateUser('{{ rated_user.username }}', {{ i }})"
+            {% endif %}
+            style="cursor:{% if user.is_authenticated and user.profile.email_verified and user.username != rated_user.username %}pointer{% else %}default{% endif %};
+                   font-size: 1.3rem; color: #ddd; transition: color 0.15s;">
+        ★
+      </span>
+    {% endfor %}
+    <span class="rating-info ms-2 small text-muted">
+      {% if average_rating %}
+        <span class="rating-average fw-bold text-dark">{{ average_rating }}</span>
+      {% else %}
+        <span class="rating-average text-muted">0.0</span>
+      {% endif %}
+      <span class="rating-count">({{ rating_count }}{% if rating_count == 1 %} оценка{% elif rating_count >= 2 and rating_count <= 4 %} оценки{% else %} оценок{% endif %})</span>
+    </span>
+  </div>
+  <div class="rating-feedback small text-success mt-1" style="display:none;"></div>
+  <div class="rating-error small text-danger mt-1" style="display:none;"></div>
+</div>
+
+<script>
+function rateUser(username, score) {
+  const container = document.querySelector(`.star-rating[data-username="${username}"]`);
+  const feedback = container.querySelector('.rating-feedback');
+  const error = container.querySelector('.rating-error');
+
+  feedback.style.display = 'none';
+  error.style.display = 'none';
+
+  fetch(`/ratings/api/${username}/rate/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': '{{ csrf_token }}',
+    },
+    body: JSON.stringify({ score: score }),
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.error) {
+      error.textContent = data.error;
+      error.style.display = 'block';
+      return;
+    }
+    // Обновляем звёзды
+    const stars = container.querySelectorAll('.star');
+    stars.forEach((star, index) => {
+      if (index < data.my_rating) {
+        star.classList.add('active');
+      } else {
+        star.classList.remove('active');
+      }
+    });
+    // Обновляем текст
+    container.querySelector('.rating-average').textContent = data.average;
+    const countWord = data.count === 1 ? 'оценка' : (data.count >= 2 && data.count <= 4 ? 'оценки' : 'оценок');
+    container.querySelector('.rating-count').textContent = `(${data.count} ${countWord})`;
+    // Показываем фидбек
+    feedback.textContent = '✓ Оценка сохранена';
+    feedback.style.display = 'block';
+    setTimeout(() => { feedback.style.display = 'none'; }, 2000);
+  })
+  .catch(err => {
+    error.textContent = 'Ошибка при сохранении оценки';
+    error.style.display = 'block';
+  });
+}
+</script>
+{% endif %}

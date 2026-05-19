@@ -18,6 +18,7 @@ from categories.models import Category
 from datetime import date, timedelta
 import logging
 from apps.utils import compress_uploaded_image, log_debug
+from ratings.models import Rating
 
 logger = logging.getLogger('upload')
 
@@ -81,6 +82,13 @@ def detail_view(request, pk):
         pk, listing.status, author.username, active_count, completed_count,
     )
 
+    # Рейтинг автора
+    average_rating = Rating.get_average_for_user(author)
+    rating_count = Rating.get_count_for_user(author)
+    my_rating = None
+    if request.user.is_authenticated:
+        my_rating = Rating.get_user_rating(author, request.user)
+
     context = {
         'listing': listing,
         'images': images,
@@ -89,6 +97,9 @@ def detail_view(request, pk):
         'is_favorite': is_favorite,
         'author_active_count': active_count,
         'author_completed_count': completed_count,
+        'average_rating': average_rating,
+        'rating_count': rating_count,
+        'my_rating': my_rating,
     }
     return render(request, 'listings/detail.html', context)
 

@@ -11,6 +11,7 @@ from django.conf import settings
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes
 from django.contrib.auth.models import User
+from ratings.models import Rating
 
 @login_required
 def resend_verification_email(request):
@@ -109,8 +110,13 @@ def logout_view(request):
 
 @login_required
 def profile_view(request):
+    user = request.user
+    # Рейтинг пользователя (для отображения)
+    profile_rating_avg = Rating.get_average_for_user(user)
+    profile_rating_count = Rating.get_count_for_user(user)
+
     if request.method == 'POST':
-        form = ProfileForm(request.POST, request.FILES, instance=request.user.profile)
+        form = ProfileForm(request.POST, request.FILES, instance=user.profile)
         # Ручная валидация email и телефона
         email = request.POST.get('email', '').strip()
         phone_raw = request.POST.get('phone', '')
@@ -137,14 +143,18 @@ def profile_view(request):
                 'form': form,
                 'email_value': email,
                 'phone_value': phone_raw,
+                'profile_rating_avg': profile_rating_avg,
+                'profile_rating_count': profile_rating_count,
             })
     else:
-        form = ProfileForm(instance=request.user.profile)
-        phone_formatted = request.user.profile.get_formatted_phone()
+        form = ProfileForm(instance=user.profile)
+        phone_formatted = user.profile.get_formatted_phone()
         return render(request, 'users/profile.html', {
             'form': form,
-            'email_value': request.user.email,
+            'email_value': user.email,
             'phone_value': phone_formatted if phone_formatted else '',
+            'profile_rating_avg': profile_rating_avg,
+            'profile_rating_count': profile_rating_count,
         })
 
 @login_required
