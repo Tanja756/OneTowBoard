@@ -10,4 +10,5 @@ def site_settings(request):
         'site_email': getattr(settings, 'SITE_EMAIL', ''),
         'site_working_hours': getattr(settings, 'SITE_WORKING_HOURS', ''),
         'enable_google_auth': settings.ENABLE_GOOGLE_AUTH,
+        'enable_favorites': settings.ENABLE_FAVORITES,
     }

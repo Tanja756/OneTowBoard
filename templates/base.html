@@ -67,6 +67,9 @@
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end">
                                 <li><a class="dropdown-item" href="{% url 'users:my_listings' %}">Мои объявления</a></li>
+                                {% if enable_favorites %}
+                                  <li><a class="dropdown-item" href="{% url 'listings:favorites' %}">❤ Избранные</a></li>
+                                {% endif %}
                                 <li><a class="dropdown-item" href="{% url 'users:profile' %}">Настройки</a></li>
                                 <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item" href="{% url 'users:logout' %}">Выйти</a></li>

@@ -55,14 +55,16 @@
     <span class="badge bg-danger mb-2">Срочное объявление</span>
 {% endif %}
       {% if listing.status != 'active' %}
-        <div class="alert alert-warning">Статус: {{ listing.get_status_display }}</div>
+        <div class="alert alert-warning py-1 px-2 mb-2 small">Статус: {{ listing.get_status_display }}</div>
       {% endif %}
-      <p class="text-muted small">Категория: {{ listing.category.name|default:"Без категории" }}</p>
-<p class="text-muted small">Опубликовано: {{ listing.created_at|date:"d.m.Y H:i" }}</p>
-{% if listing.expiry_date %}
-    <p class="text-muted small">Активно до: {{ listing.expiry_date|date:"d.m.Y" }}</p>
-{% endif %}
-<p class="text-muted small">Просмотров сегодня: {{ listing.today_views }}, всего: {{ listing.total_views }}</p>
+      <div class="d-flex flex-wrap gap-3 text-muted small mb-2">
+        <span>📂 {{ listing.category.name|default:"Без категории" }}</span>
+        <span>📅 {{ listing.created_at|date:"d.m.Y H:i" }}</span>
+        {% if listing.expiry_date %}
+          <span>⏳ до {{ listing.expiry_date|date:"d.m.Y" }}</span>
+        {% endif %}
+        <span>👁️ {{ listing.today_views }} сегодня / {{ listing.total_views }} всего</span>
+      </div>
       <hr>
       <h2 class="h6">Описание</h2>
       <p>{{ listing.description|linebreaks }}</p>
@@ -90,6 +92,18 @@
         <span class="fs-3 fw-bold text-success">{{ listing.price|price_display }} ₽</span>
     </div>
 {% endif %}
+        <!-- Кнопка "В избранное" (для авторизованных, не для автора) -->
+    {% if user.is_authenticated and enable_favorites %}
+      <button id="favoriteBtn" class="btn {% if is_favorite %}btn-danger{% else %}btn-outline-danger{% endif %} w-100 mb-2"
+              onclick="toggleFavorite({{ listing.pk }})">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+             class="bi {% if is_favorite %}bi-heart-fill{% else %}bi-heart{% endif %} me-1" viewBox="0 0 16 16">
+          <path fill-rule="evenodd" d="M8 1.314C12.438-3.248 23.534 4.735 8 15-7.534 4.736 3.562-3.248 8 1.314z"/>
+        </svg>
+        <span id="favoriteText">{% if is_favorite %}В избранном{% else %}В избранное{% endif %}</span>
+      </button>
+    {% endif %}
+
     {% if show_contacts %}
       <!-- Карточка продавца -->
       <div class="card mb-3 shadow-sm">
@@ -117,25 +131,12 @@
 </div>
           </div>
 
-          {% if listing.contact_phone %}
-            <button id="showPhoneBtn" class="btn btn-success w-100 mb-2" onclick="showPhone()">
-              📞 Показать телефон
-            </button>
-            <p id="phoneNumber" class="fw-bold text-success mb-2" style="display: none;">
-              {{ listing.contact_phone|format_phone }}
-            </p>
-          {% else %}
-            {% if listing.author.profile.phone %}
-              <button id="showPhoneBtn" class="btn btn-success w-100 mb-2" onclick="showPhone()">
-                📞 Показать телефон
-              </button>
-              <p id="phoneNumber" class="fw-bold text-success mb-2" style="display: none;">
-                {{ listing.author.profile.get_formatted_phone }}
-              </p>
-            {% else %}
-              <p class="text-muted small">Телефон не указан</p>
-            {% endif %}
-          {% endif %}
+          <button id="showPhoneBtn" class="btn btn-success w-100 mb-2" onclick="showPhone({{ listing.pk }})">
+            📞 Показать телефон
+          </button>
+          <div id="phoneContainer" class="mb-2 text-center" style="display: none;">
+            <img id="phoneImage" src="" alt="Телефон" class="img-fluid" style="max-width: 100%; height: auto;">
+          </div>
         </div>
       </div>
 
@@ -175,9 +176,53 @@
 
 {% block extra_js %}
 <script>
-  function showPhone() {
-    document.getElementById('showPhoneBtn').style.display = 'none';
-    document.getElementById('phoneNumber').style.display = 'block';
+  function showPhone(listingId) {
+    const btn = document.getElementById('showPhoneBtn');
+    const container = document.getElementById('phoneContainer');
+    const img = document.getElementById('phoneImage');
+    btn.disabled = true;
+    btn.textContent = 'Загрузка...';
+    img.src = '{% url "listings:phone_image" 0 %}'.replace('0', listingId) + '?_=' + Date.now();
+    img.onload = function() {
+      btn.style.display = 'none';
+      container.style.display = 'block';
+    };
+    img.onerror = function() {
+      btn.disabled = false;
+      btn.textContent = '📞 Показать телефон';
+      container.innerHTML = '<p class="text-danger small">Ошибка загрузки</p>';
+      container.style.display = 'block';
+    };
+  }
+
+  function toggleFavorite(listingId) {
+    const url = '{% url "listings:favorite_toggle" 0 %}'.replace('0', listingId);
+    fetch(url, {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': '{{ csrf_token }}',
+      },
+    })
+    .then(response => response.json())
+    .then(data => {
+      const btn = document.getElementById('favoriteBtn');
+      const icon = btn.querySelector('.bi');
+      const text = document.getElementById('favoriteText');
+      if (data.is_favorite) {
+        btn.classList.remove('btn-outline-danger');
+        btn.classList.add('btn-danger');
+        icon.classList.remove('bi-heart');
+        icon.classList.add('bi-heart-fill');
+        text.textContent = 'В избранном';
+      } else {
+        btn.classList.remove('btn-danger');
+        btn.classList.add('btn-outline-danger');
+        icon.classList.remove('bi-heart-fill');
+        icon.classList.add('bi-heart');
+        text.textContent = 'В избранное';
+      }
+    })
+    .catch(error => console.error('Ошибка:', error));
   }
 
   document.addEventListener('DOMContentLoaded', function() {

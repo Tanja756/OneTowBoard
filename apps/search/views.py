@@ -3,7 +3,7 @@ from django.db.models import Q, F
 from django.db.models.functions import Lower
 from django.shortcuts import render
 from datetime import date
-from listings.models import Listing
+from listings.models import Listing, Favorite
 from categories.models import Category
 
 def search_view(request):
@@ -61,6 +61,10 @@ def search_view(request):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
+    favorite_ids = set()
+    if request.user.is_authenticated:
+        favorite_ids = set(Favorite.objects.filter(user=request.user).values_list('listing_id', flat=True))
+
     return render(request, 'search/search.html', {
         'query': query,
         'page_obj': page_obj,
@@ -68,4 +72,5 @@ def search_view(request):
         'price_from': price_from or '',
         'price_to': price_to or '',
         'no_price': no_price,
+        'favorite_ids': favorite_ids,
     })

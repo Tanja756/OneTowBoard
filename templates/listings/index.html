@@ -14,16 +14,31 @@
     <div class="card">
       <div class="card-body">
         <h6 class="card-title fw-bold">Категории</h6>
+        {% if user.is_authenticated and enable_favorites %}
+          <div class="mb-2">
+            <a href="{% url 'listings:favorites' %}" class="text-decoration-none small d-flex align-items-center gap-1 text-danger fw-semibold">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                <path fill-rule="evenodd" d="M8 1.314C12.438-3.248 23.534 4.735 8 15-7.534 4.736 3.562-3.248 8 1.314z"/>
+              </svg>
+              Избранные объявления
+            </a>
+            <hr class="my-1">
+          </div>
+        {% endif %}
         {% show_category_tree current_category=None %}
       </div>
     </div>
 
-    <!-- Блок CTA (Призыв к действию) -->
+    <!-- Блок CTA (Призыв к действию) — компактно на мобильных -->
     <div class="card mt-3 bg-primary text-white">
-      <div class="card-body text-center">
-        <h6 class="card-title">Разместите своё объявление</h6>
-        <p class="small">Это займёт всего пару минут</p>
-        <a href="{% url 'listings:create' %}" class="btn btn-light btn-sm">+ Подать объявление</a>
+      <div class="card-body text-center py-2 py-md-3 px-2">
+        <div class="d-flex d-md-block align-items-center justify-content-between gap-2">
+          <div class="text-start text-md-center">
+            <div class="fw-semibold small">Разместите своё объявление</div>
+            <div class="small text-white-50 d-none d-md-inline">Это займёт всего пару минут</div>
+          </div>
+          <a href="{% url 'listings:create' %}" class="btn btn-light btn-sm flex-shrink-0">+ Подать</a>
+        </div>
       </div>
     </div>
 
@@ -60,6 +75,13 @@
     <div class="list-view">
       {% for listing in page_obj %}
         <div class="card mb-2 border-0 shadow-sm listing-item position-relative {% if listing.is_promoted %}card-promoted{% endif %}">
+          {% if listing.pk in favorite_ids and user.is_authenticated and enable_favorites %}
+            <div class="position-absolute bottom-0 end-0 m-1" style="z-index: 2;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#dc3545" viewBox="0 0 16 16">
+                <path fill-rule="evenodd" d="M8 1.314C12.438-3.248 23.534 4.735 8 15-7.534 4.736 3.562-3.248 8 1.314z"/>
+              </svg>
+            </div>
+          {% endif %}
           <div class="card-body p-2">
             <div class="row g-2 align-items-start">
               <!-- 1-я колонка: фото -->
@@ -146,6 +168,13 @@
         <div class="col-6 col-md-4 col-lg-3">
           <a href="{% url 'listings:detail' listing.pk %}" class="text-decoration-none text-dark">
             <div class="card h-100 border-0 shadow-sm position-relative {% if listing.is_promoted %}card-promoted{% endif %}">
+              {% if listing.pk in favorite_ids and user.is_authenticated and enable_favorites %}
+                <div class="position-absolute top-0 end-0 m-1" style="z-index: 2;">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#dc3545" viewBox="0 0 16 16">
+                    <path fill-rule="evenodd" d="M8 1.314C12.438-3.248 23.534 4.735 8 15-7.534 4.736 3.562-3.248 8 1.314z"/>
+                  </svg>
+                </div>
+              {% endif %}
               {% with listing.images.first as main_image %}
                 {% if main_image %}
                   <img src="{{ main_image.thumbnail_url|default:main_image.image.url }}" class="card-img-top" alt="{{ listing.title }}" style="height: 150px; object-fit: cover;" loading="lazy">

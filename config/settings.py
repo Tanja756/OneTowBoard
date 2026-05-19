@@ -36,6 +36,9 @@ CSRF_TRUSTED_ORIGINS = os.environ.get(
 # Google OAuth – можно отключить через .env (ENABLE_GOOGLE_AUTH=False)
 ENABLE_GOOGLE_AUTH = os.environ.get('ENABLE_GOOGLE_AUTH', 'True').lower() == 'true'
 
+# Избранное – можно отключить через .env (ENABLE_FAVORITES=False)
+ENABLE_FAVORITES = os.environ.get('ENABLE_FAVORITES', 'True').lower() == 'true'
+
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 

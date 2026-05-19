@@ -5,7 +5,7 @@ from django.shortcuts import render, get_object_or_404
 from django.template.loader import render_to_string
 from datetime import date
 from .models import Category
-from listings.models import Listing
+from listings.models import Listing, Favorite
 
 
 def list_view(request):
@@ -100,6 +100,10 @@ def detail_view(request, slug):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
+    favorite_ids = set()
+    if request.user.is_authenticated:
+        favorite_ids = set(Favorite.objects.filter(user=request.user).values_list('listing_id', flat=True))
+
     return render(request, 'categories/detail.html', {
         'category': category,
         'view_mode': view_mode,
@@ -110,4 +114,5 @@ def detail_view(request, slug):
         'no_price': no_price,
         'parameters': parameters,
         'selected_params': selected_params,
+        'favorite_ids': favorite_ids,
     })

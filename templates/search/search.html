@@ -36,6 +36,13 @@
       <div class="list-view">
         {% for listing in page_obj %}
           <div class="card mb-2 border-0 shadow-sm listing-item position-relative {% if listing.is_promoted %}card-promoted{% endif %}">
+          {% if listing.pk in favorite_ids and user.is_authenticated and enable_favorites %}
+            <div class="position-absolute bottom-0 end-0 m-1" style="z-index: 2;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#dc3545" viewBox="0 0 16 16">
+                <path fill-rule="evenodd" d="M8 1.314C12.438-3.248 23.534 4.735 8 15-7.534 4.736 3.562-3.248 8 1.314z"/>
+              </svg>
+            </div>
+          {% endif %}
             <div class="card-body p-2">
               <div class="row g-2 align-items-start">
                 <!-- Фото -->

@@ -1,13 +1,16 @@
 import uuid
 import json
+import io
+import random
 from datetime import date, timedelta
 from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse, HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db import transaction, IntegrityError
 from django.db.models import F, Q
-from .models import Listing, ListingImage
+from .models import Listing, ListingImage, Favorite
 from .forms import ListingForm
 from categories.models import Category
 from datetime import date, timedelta
@@ -31,9 +34,13 @@ def index_view(request):
     paginator = Paginator(listings_list, 24)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
+    favorite_ids = set()
+    if request.user.is_authenticated:
+        favorite_ids = set(Favorite.objects.filter(user=request.user).values_list('listing_id', flat=True))
     return render(request, 'listings/index.html', {
         'page_obj': page_obj,
         'view_mode': view_mode,
+        'favorite_ids': favorite_ids,
     })
 
 
@@ -52,11 +59,15 @@ def detail_view(request, pk):
     listing.increment_views(request)
     images = listing.images.all()
     show_contacts = request.user.is_authenticated
+    is_favorite = False
+    if request.user.is_authenticated:
+        is_favorite = Favorite.objects.filter(user=request.user, listing=listing).exists()
     context = {
         'listing': listing,
         'images': images,
         'show_contacts': show_contacts,
         'is_completed': listing.is_completed,
+        'is_favorite': is_favorite,
     }
     return render(request, 'listings/detail.html', context)
 
@@ -260,6 +271,80 @@ def delete_listing_view(request, pk):
         return redirect('users:my_listings')
 
     return render(request, 'listings/delete_confirm.html', {'listing': listing})
+
+
+@login_required
+def favorite_toggle_view(request, pk):
+    """AJAX-эндпоинт: добавить/удалить из избранного. Возвращает JSON."""
+    listing = get_object_or_404(Listing, pk=pk)
+    favorite, created = Favorite.objects.get_or_create(user=request.user, listing=listing)
+    if not created:
+        favorite.delete()
+        is_favorite = False
+    else:
+        is_favorite = True
+    return JsonResponse({'is_favorite': is_favorite})
+
+
+@login_required
+def favorite_list_view(request):
+    """Список избранных объявлений текущего пользователя."""
+    favorites = Favorite.objects.filter(user=request.user).select_related(
+        'listing__author', 'listing__category'
+    ).prefetch_related('listing__images')
+    listings = [fav.listing for fav in favorites]
+    return render(request, 'listings/favorites.html', {
+        'listings': listings,
+    })
+
+
+@login_required
+def phone_image_view(request, pk):
+    """Генерирует PNG-изображение с номером телефона объявления (только для авторизованных)."""
+    from PIL import Image, ImageDraw, ImageFont
+    listing = get_object_or_404(Listing, pk=pk)
+    # Определяем телефон: сначала телефон объявления, иначе телефон автора
+    phone = listing.contact_phone.strip() if listing.contact_phone else ''
+    if not phone:
+        if listing.author.profile.phone:
+            phone = listing.author.profile.phone.strip()
+    if not phone:
+        phone = 'Телефон не указан'
+
+    # Форматируем номер
+    digits = ''.join(filter(str.isdigit, phone))
+    if len(digits) == 11 and digits[0] == '7':
+        formatted = f"+7 ({digits[1:4]}) {digits[4:7]}-{digits[7:9]}-{digits[9:11]}"
+    else:
+        formatted = phone
+
+    # Создаём изображение
+    font_size = 16
+    try:
+        font = ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf', font_size)
+    except (IOError, OSError):
+        font = ImageFont.load_default()
+
+    # Измеряем текст
+    dummy_img = Image.new('RGB', (1, 1))
+    dummy_draw = ImageDraw.Draw(dummy_img)
+    bbox = dummy_draw.textbbox((0, 0), formatted, font=font)
+    text_w = bbox[2] - bbox[0]
+    text_h = bbox[3] - bbox[1]
+
+    padding_x = 20
+    padding_y = 10
+    img_w = text_w + padding_x * 2
+    img_h = text_h + padding_y * 2
+
+    img = Image.new('RGBA', (img_w, img_h), (255, 255, 255, 0))
+    draw = ImageDraw.Draw(img)
+    draw.text((padding_x, padding_y), formatted, fill=(0, 128, 0), font=font)
+
+    buf = io.BytesIO()
+    img.save(buf, format='PNG')
+    buf.seek(0)
+    return HttpResponse(buf.getvalue(), content_type='image/png')
 
 
 @login_required

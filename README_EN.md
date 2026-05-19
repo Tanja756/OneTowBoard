@@ -62,12 +62,22 @@ A modern classifieds board with moderation, hierarchical categories, dynamic par
 - SMTP via environment variables (console backend in development)
 - Optional support notifications (`NOTIFY_ADMIN_NEW_USER`, `NOTIFY_ADMIN_NEW_LISTING`)
 
+### Favorites
+
+- **Save listings** to favorites with one click (AJAX)
+- **Favorites page** in the personal account
+- Favorite indicator on listing cards (homepage, categories, search)
+- Completed listings shown faded with a badge
+- Phone number is not in HTML — loaded as a server-generated image (anti-scraping)
+- Can be disabled via `ENABLE_FAVORITES=False` in `.env`
+
 ### Admin & Security
 
 - Bulk listing actions (approve, deactivate, send to moderation), image previews
 - Search listings by title, description, author, **external ID**, and **contact phone**
 - User profiles show **email verification** status
 - CSRF protection, display name validation, duplicate form protection (one-time token)
+- Phone number never appears in HTML — dynamically generated as a PNG image
 
 ### SEO & Indexing
 
@@ -360,7 +370,6 @@ OneTwoBoard/
 
 ## Roadmap
 
-- Private messaging
 - Ratings and reviews
 - Extended email notifications
 - Full-text search (PostgreSQL)

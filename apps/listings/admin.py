@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Listing, ListingImage
+from .models import Listing, ListingImage, Favorite
 
 # Действия (actions)
 def make_active(modeladmin, request, queryset):
@@ -76,3 +76,10 @@ class ListingImageAdmin(admin.ModelAdmin):
         return "Нет"
     image_preview.allow_tags = True
     image_preview.short_description = 'Фото'
+
+@admin.register(Favorite)
+class FavoriteAdmin(admin.ModelAdmin):
+    list_display = ('user', 'listing', 'created_at')
+    list_filter = ('created_at',)
+    search_fields = ('user__username', 'listing__title')
+    date_hierarchy = 'created_at'
