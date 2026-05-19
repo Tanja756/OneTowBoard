@@ -108,28 +108,35 @@
       <!-- Карточка продавца -->
       <div class="card mb-3 shadow-sm">
         <div class="card-body">
-          <div class="d-flex align-items-start mb-3">
-            <div class="flex-shrink-0 me-3">
-              {% if listing.author.profile.avatar %}
-                <img src="{{ listing.author.profile.avatar.url }}" class="rounded-circle"
-                     width="48" height="48" style="object-fit: cover;" alt="{{ listing.author.profile.get_display_name }}">
-              {% else %}
-                <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center"
-                     style="width:48px; height:48px; font-size:1.2rem;">
-                  {{ listing.author.profile.get_display_name|slice:":1"|upper }}
+            <div class="d-flex align-items-start mb-3">
+              <div class="flex-shrink-0 me-3">
+                {% if listing.author.profile.avatar %}
+                  <img src="{{ listing.author.profile.avatar.url }}" class="rounded-circle"
+                       width="48" height="48" style="object-fit: cover;" alt="{{ listing.author.profile.get_display_name }}">
+                {% else %}
+                  <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center"
+                       style="width:48px; height:48px; font-size:1.2rem;">
+                    {{ listing.author.profile.get_display_name|slice:":1"|upper }}
+                  </div>
+                {% endif %}
+              </div>
+              <div>
+                <a href="{% url 'listings:user_listings' listing.author.username %}" class="text-decoration-none">
+                  <strong>{{ listing.author.profile.get_display_name }}</strong>
+                </a>
+                <div class="small text-muted">
+                  {% if listing.author.profile.profile_type == 'company' %}Компания{% else %}Частное лицо{% endif %}
                 </div>
-              {% endif %}
+                {% if listing.author.profile.city %}
+                  <div class="small text-muted">{{ listing.author.profile.city }}</div>
+                {% endif %}
+                <div class="small text-muted mt-2">
+                  <span class="text-success">● {{ author_active_count }} активных</span>
+                  <br>
+                  <span class="text-secondary">✓ {{ author_completed_count }} завершённых</span>
+                </div>
+              </div>
             </div>
-<div>
-    <strong>{{ listing.author.profile.get_display_name }}</strong>
-    <div class="small text-muted">
-        {% if listing.author.profile.profile_type == 'company' %}Компания{% else %}Частное лицо{% endif %}
-    </div>
-    {% if listing.author.profile.city %}
-        <div class="small text-muted">{{ listing.author.profile.city }}</div>
-    {% endif %}
-</div>
-          </div>
 
           <button id="showPhoneBtn" class="btn btn-success w-100 mb-2" onclick="showPhone({{ listing.pk }})">
             📞 Показать телефон

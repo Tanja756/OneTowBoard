@@ -107,3 +107,15 @@ footer.bg-light {
     flex-direction: column;
     align-items: flex-end;
 }
+
+/* Ограничение описания объявления в режиме списка — максимум 2 строки */
+.list-view .listing-description {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-height: 3em; /* fallback для браузеров без line-clamp */
+    line-height: 1.5;
+    margin-bottom: 0.25rem;
+}

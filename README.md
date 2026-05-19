@@ -168,6 +168,9 @@ ENABLE_GOOGLE_AUTH=True
 GOOGLE_CLIENT_ID=...
 GOOGLE_CLIENT_SECRET=...
 
+# Избранное (включено по умолчанию)
+ENABLE_FAVORITES=True
+
 EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
 EMAIL_HOST=smtp.example.com
 EMAIL_PORT=587

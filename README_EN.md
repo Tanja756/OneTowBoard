@@ -215,6 +215,9 @@ ENABLE_GOOGLE_AUTH=True
 GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=your-client-secret
 
+# Favorites (enabled by default)
+ENABLE_FAVORITES=True
+
 # Email
 EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
 EMAIL_HOST=smtp.example.com

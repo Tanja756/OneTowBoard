@@ -195,7 +195,48 @@ TECH_SUPPORT_EMAIL = os.environ.get('TECH_SUPPORT_EMAIL', '')
 NOTIFY_ADMIN_NEW_USER = os.environ.get('NOTIFY_ADMIN_NEW_USER', 'False').lower() == 'true'
 NOTIFY_ADMIN_NEW_LISTING = os.environ.get('NOTIFY_ADMIN_NEW_LISTING', 'False').lower() == 'true'
 
+# ---------- Расширенное логирование (опционально) ----------
+# Включение: ENABLE_DEBUG_LOGGING=True в .env или переменных окружения
+ENABLE_DEBUG_LOGGING = os.environ.get('ENABLE_DEBUG_LOGGING', 'False').lower() == 'true'
+os.makedirs(os.path.join(BASE_DIR, 'logs'), exist_ok=True)
+
 # ---------- Логирование ----------
+_handlers = {
+    'file_upload': {
+        'level': 'DEBUG',
+        'class': 'logging.FileHandler',
+        'filename': os.path.join(BASE_DIR, 'logs', 'upload.log'),
+        'formatter': 'verbose',
+    },
+    'console': {
+        'level': 'DEBUG',
+        'class': 'logging.StreamHandler',
+        'formatter': 'verbose',
+    },
+}
+
+_loggers = {
+    'upload': {
+        'handlers': ['file_upload', 'console'],
+        'level': 'DEBUG',
+        'propagate': False,
+    },
+}
+
+# Если включено расширенное логирование — добавляем debug-логгер
+if ENABLE_DEBUG_LOGGING:
+    _handlers['file_debug'] = {
+        'level': 'DEBUG',
+        'class': 'logging.FileHandler',
+        'filename': os.path.join(BASE_DIR, 'logs', 'debug.log'),
+        'formatter': 'verbose',
+    }
+    _loggers['debug'] = {
+        'handlers': ['file_debug', 'console'],
+        'level': 'DEBUG',
+        'propagate': False,
+    }
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -205,24 +246,6 @@ LOGGING = {
             'style': '{',
         },
     },
-    'handlers': {
-        'file_upload': {
-            'level': 'DEBUG',
-            'class': 'logging.FileHandler',
-            'filename': os.path.join(BASE_DIR, 'logs', 'upload.log'),
-            'formatter': 'verbose',
-        },
-        'console': {
-            'level': 'DEBUG',
-            'class': 'logging.StreamHandler',
-            'formatter': 'verbose',
-        },
-    },
-    'loggers': {
-        'upload': {
-            'handlers': ['file_upload', 'console'],
-            'level': 'DEBUG',
-            'propagate': False,
-        },
-    },
+    'handlers': _handlers,
+    'loggers': _loggers,
 }

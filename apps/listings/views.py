@@ -10,12 +10,14 @@ from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db import transaction, IntegrityError
 from django.db.models import F, Q
+from django.contrib.auth.models import User
+from django.conf import settings
 from .models import Listing, ListingImage, Favorite
 from .forms import ListingForm
 from categories.models import Category
 from datetime import date, timedelta
 import logging
-from apps.utils import compress_uploaded_image
+from apps.utils import compress_uploaded_image, log_debug
 
 logger = logging.getLogger('upload')
 
@@ -62,12 +64,31 @@ def detail_view(request, pk):
     is_favorite = False
     if request.user.is_authenticated:
         is_favorite = Favorite.objects.filter(user=request.user, listing=listing).exists()
+
+    # Счётчики для карточки автора
+    author = listing.author
+    active_count = Listing.objects.filter(
+        author=author, status='active', is_completed=False
+    ).filter(
+        Q(expiry_date__isnull=True) | Q(expiry_date__gte=date.today())
+    ).count()
+    completed_count = Listing.objects.filter(
+        author=author, is_completed=True
+    ).count()
+
+    log_debug(
+        "detail_view pk=%s | status=%s | author=%s | active=%d | completed=%d",
+        pk, listing.status, author.username, active_count, completed_count,
+    )
+
     context = {
         'listing': listing,
         'images': images,
         'show_contacts': show_contacts,
         'is_completed': listing.is_completed,
         'is_favorite': is_favorite,
+        'author_active_count': active_count,
+        'author_completed_count': completed_count,
     }
     return render(request, 'listings/detail.html', context)
 
@@ -132,6 +153,11 @@ def create_listing_view(request):
                     param_data[slug] = value
         listing.parameters = param_data
         listing.save()
+
+        log_debug(
+            "create_listing_view: listing pk=%s created | author=%s | category=%s | duration=%d",
+            listing.pk, request.user.username, category.slug, duration_days,
+        )
     
         images = request.FILES.getlist('images')
         logger.info(f'Начинаю загрузку {len(images)} изображений для объявления {listing.pk}')
@@ -235,6 +261,11 @@ def edit_listing_view(request, pk):
                     'form_token': request.session['form_token'],
                 })
 
+            log_debug(
+                "edit_listing_view: listing pk=%s updated | author=%s | images=%d",
+                listing.pk, request.user.username, len(images),
+            )
+
             # Обновляем токен после успешного сохранения
             request.session['form_token'] = str(uuid.uuid4())
             messages.success(request, 'Объявление обновлено.')
@@ -299,6 +330,46 @@ def favorite_list_view(request):
 
 
 @login_required
+def complete_listing_view(request, pk):
+    listing = get_object_or_404(Listing, pk=pk)
+    if listing.author != request.user and not request.user.is_staff:
+        messages.error(request, 'У вас нет прав на завершение этого объявления.')
+        return redirect('listings:detail', pk=pk)
+
+    if request.method == 'POST':
+        listing.is_completed = True
+        listing.save()
+        messages.success(request, 'Объявление завершено.')
+        return redirect('users:my_listings')
+
+    return render(request, 'listings/complete_confirm.html', {'listing': listing})
+
+
+def user_listings_view(request, username):
+    """Просмотр всех объявлений определённого пользователя."""
+    author = get_object_or_404(User, username=username)
+    listings_list = Listing.objects.filter(
+        author=author, status='active'
+    ).filter(
+        Q(expiry_date__isnull=True) | Q(expiry_date__gte=date.today())
+    ).select_related('author', 'category').prefetch_related('images').order_by('-created_at')
+
+    paginator = Paginator(listings_list, 24)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    favorite_ids = set()
+    if request.user.is_authenticated:
+        favorite_ids = set(Favorite.objects.filter(user=request.user).values_list('listing_id', flat=True))
+
+    return render(request, 'listings/index.html', {
+        'page_obj': page_obj,
+        'view_mode': request.session.get('view_mode', 'grid'),
+        'favorite_ids': favorite_ids,
+        'user_listings_author': author,
+    })
+
+
 def phone_image_view(request, pk):
     """Генерирует PNG-изображение с номером телефона объявления (только для авторизованных)."""
     from PIL import Image, ImageDraw, ImageFont
@@ -347,17 +418,3 @@ def phone_image_view(request, pk):
     return HttpResponse(buf.getvalue(), content_type='image/png')
 
 
-@login_required
-def complete_listing_view(request, pk):
-    listing = get_object_or_404(Listing, pk=pk)
-    if listing.author != request.user and not request.user.is_staff:
-        messages.error(request, 'У вас нет прав на завершение этого объявления.')
-        return redirect('listings:detail', pk=pk)
-
-    if request.method == 'POST':
-        listing.is_completed = True
-        listing.save()
-        messages.success(request, 'Объявление завершено.')
-        return redirect('users:my_listings')
-
-    return render(request, 'listings/complete_confirm.html', {'listing': listing})

@@ -68,7 +68,7 @@
                 <!-- Описание -->
                 <div class="col">
                   <a href="{% url 'listings:detail' listing.pk %}" class="text-decoration-none text-dark fw-bold d-inline-block mb-1">{{ listing.title }}</a>
-                  <p class="text-muted small mb-1">{{ listing.description|truncatewords:15 }}</p>
+                  <p class="text-muted small listing-description">{{ listing.description|truncatewords:15 }}</p>
                   <div class="d-flex align-items-center small text-muted">
                     <span class="d-flex align-items-center text-truncate me-2" style="min-width: 0;">
                       {% if listing.author.profile %}

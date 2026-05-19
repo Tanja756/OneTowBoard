@@ -22,10 +22,11 @@
                 <img src="{% static 'images/a_cat.png' %}" width="24" height="24" class="me-2" alt="">
                 Выберите категорию
               </h5>
-              <input type="hidden" name="category_slug" id="id_category_slug" value="{{ selected_category_slug|default:'' }}">
-              <div class="border rounded p-2" style="max-height: 350px; overflow-y: auto;">
-                {% show_category_tree_select selected_slug=selected_category_slug|default:'' %}
-              </div>
+      <input type="hidden" name="category_slug" id="id_category_slug" value="{{ selected_category_slug|default:'' }}">
+      <div id="categoryError" class="text-danger small mb-2" style="display: none;">Пожалуйста, выберите категорию</div>
+      <div class="border rounded p-2" style="max-height: 350px; overflow-y: auto;">
+        {% show_category_tree_select selected_slug=selected_category_slug|default:'' %}
+      </div>
             </div>
           </div>
         </div>
@@ -176,10 +177,23 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    slugInput.addEventListener('change', loadParameters);
+    slugInput.addEventListener('change', function() {
+        document.getElementById('categoryError').style.display = 'none';
+        loadParameters();
+    });
     if (slugInput.value) {
         loadParameters();
     }
+
+    // ---------- Валидация категории перед отправкой ----------
+    const form = document.getElementById('listingForm');
+    form.addEventListener('submit', function(e) {
+        if (!slugInput.value.trim()) {
+            e.preventDefault();
+            document.getElementById('categoryError').style.display = 'block';
+            slugInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    });
 
     // ---------- Работа с фото: предпросмотр, удаление, перетаскивание ----------
     const fileInput = document.getElementById('id_images');
