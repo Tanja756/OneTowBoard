@@ -2,7 +2,7 @@
 
 [Русский](README.md)
 
-A modern classifieds board with moderation, hierarchical categories, dynamic parameters, and a responsive interface. Ready for Docker deployment with HTTPS via Nginx.
+A modern classifieds board with moderation, hierarchical categories, dynamic parameters, and a **responsive interface with separate templates for desktop and mobile** on Bootstrap 5. Ready for Docker deployment with HTTPS via Nginx.
 
 **Demo:** [gripol.online](https://gripol.online)
 
@@ -14,6 +14,7 @@ A modern classifieds board with moderation, hierarchical categories, dynamic par
 - **Bootstrap 5.3** (CDN)
 - **Pillow** — image processing
 - **django-allauth** — optional Google sign-in
+- **django-user-agents** — device detection (desktop/mobile)
 - **Gunicorn** + **WhiteNoise** — production
 - **Docker** — containerization
 
@@ -37,7 +38,7 @@ A modern classifieds board with moderation, hierarchical categories, dynamic par
 - **Expiry duration** (1 day – 1 month); expired listings completed by `expire_listings` (cron)
 - Dynamic category parameters (AJAX), required before publish
 - **External ID** (`external_id`) — unique listing identifier (UUID); used for bulk import create/update
-- **Listing contact phone** (`contact_phone`) — per-listing phone number; takes priority over the author's profile phone in admin and on the detail page
+- **Listing contact phone** (`contact_phone`) — per-listing phone number; takes priority over the author's profile phone
 - Detail page: gallery with slider (mouse and keyboard), formatted price (`15 000 ₽`), views today and total, expiry date
 - Contacts visible only to **authenticated** users; phone hidden until "Show phone" is clicked, displayed as `+7 (999) 999-99-99`
 - Unique view counting for authenticated users (once per day)
@@ -71,6 +72,14 @@ A modern classifieds board with moderation, hierarchical categories, dynamic par
 - Phone number is not in HTML — loaded as a server-generated image (anti-scraping)
 - Can be disabled via `ENABLE_FAVORITES=False` in `.env`
 
+### Responsive Interface
+
+- **Automatic device detection** via `django_user_agents` — desktop or mobile
+- `get_device_template(request, template_name)` in [`apps/utils.py`](apps/utils.py:95) selects the appropriate template from `desktop/` or `mobile/`
+- **Desktop**: full header with logo, search bar (with category dropdown), "+ New listing" button, user dropdown menu, sidebar with category tree and recommended panel, footer
+- **Mobile**: compact header, full-width search bar, **bottom navigation bar** (Home, Search, Add, Favorites, Profile), category selection modal with JS-driven step-by-step tree, `padding-bottom: 70px` in CSS for bottom nav clearance
+- Shared components (`includes/filter_sort.html`, `ratings/star_rating.html`) are placed in the root `templates/` directory and used by both versions
+
 ### Admin & Security
 
 - Bulk listing actions (approve, deactivate, send to moderation), image previews
@@ -81,7 +90,7 @@ A modern classifieds board with moderation, hierarchical categories, dynamic par
 
 ### SEO & Indexing
 
-- The listing page `<title>` automatically includes the **author's city** when set — better local search visibility (e.g. “Bike for sale in Grigoropolisskaya”)
+- The listing page `<title>` automatically includes the **author's city** when set — better local search visibility (e.g. "Bike for sale in Grigoropolisskaya")
 - The listing meta `description` also includes the city when available
 - **`/sitemap.xml`** is generated automatically (Django sitemaps) and includes:
   - all **active**, non-completed listings (`changefreq: daily`)
@@ -280,7 +289,7 @@ SITE_ID=1
    - **Sites** — add your domain (e.g. `gripol.online`);
    - **Social applications** — provider **Google**, Client ID and Secret from Cloud Console, link to the site.
 
-6. **Restart** the server or container. “Sign in with Google” buttons appear on login and registration pages.
+6. **Restart** the server or container. "Sign in with Google" buttons appear on login and registration pages.
 
 ### Disabling
 
@@ -310,6 +319,7 @@ Daily expiry check (example at 03:00):
 |---------|----------|
 | `python manage.py expire_listings` | Complete listings past their expiry date |
 | `python manage.py import_listings <dir>` | Bulk import/update listings from folders |
+| `python manage.py reset_sequences` | Reset auto-increment IDs after manual DB imports |
 
 ### Import listings (`import_listings`)
 
@@ -347,20 +357,38 @@ python manage.py import_listings /path/to/data --param deal_type sale --param co
 
 ```
 OneTwoBoard/
-├── config/                 # settings, urls, wsgi, middleware
+├── config/                 # settings, urls, wsgi, middleware, context_processors
 ├── apps/
-│   ├── users/              # users, profiles, OAuth
-│   ├── listings/           # listings, images, views
-│   ├── categories/         # categories and parameters
-│   ├── search/             # search and filtering
-│   └── ratings/            # ratings placeholder
+│   ├── users/              # users, profiles, OAuth, registration
+│   ├── listings/           # listings, images, views, import/expire
+│   ├── categories/         # categories, parameters, filtering
+│   ├── search/             # search and sorting
+│   └── ratings/            # ratings and reviews (in development)
 ├── templates/
-├── static/
-├── media/
+│   ├── base.html                 # root base template (for allauth, email pages)
+│   ├── desktop/                  # desktop-specific templates
+│   │   ├── base.html
+│   │   ├── listings/
+│   │   ├── categories/
+│   │   ├── search/
+│   │   └── users/
+│   ├── mobile/                   # mobile-specific templates
+│   │   ├── base.html
+│   │   ├── listings/
+│   │   ├── categories/
+│   │   ├── search/
+│   │   └── users/
+│   ├── includes/                 # shared components (filter_sort.html)
+│   ├── ratings/                  # shared components (star_rating.html)
+│   └── categories/
+│       └── parameters_form.html  # AJAX parameter rendering
+├── static/                 # CSS, favicon
+├── staticfiles/            # collected static (generated by collectstatic)
+├── media/                  # user uploads
 ├── db/                     # SQLite (production)
 ├── manage.py
 ├── requirements.txt
-├── scripts/run_expire.sh   # cron: expire_listings
+├── scripts/run_expire.sh   # cron wrapper for expire_listings
 ├── Dockerfile
 ├── entrypoint.sh
 ├── README.md
@@ -369,7 +397,7 @@ OneTwoBoard/
 
 ## In Development
 
-- **Favorites** — save listings to bookmarks, section in the personal account
+- **Private messages**
 
 ## Roadmap
 

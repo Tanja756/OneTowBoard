@@ -1,0 +1,131 @@
+{% extends 'mobile/base.html' %}
+{% load static %}
+{% load url_helpers %}
+{% load category_tags %}
+{% load listing_tags %}
+
+{% block title %}Главная — {{ site_name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h5 mb-0 fw-bold">
+    {% if user_listings_author %}
+      Объявления: {{ user_listings_author.profile.get_display_name }}
+    {% else %}
+      Все объявления
+    {% endif %}
+  </h1>
+  <div class="btn-group btn-group-sm" role="group" aria-label="Вид">
+    <a href="?{% url_replace view='grid' %}" 
+       class="btn btn-outline-secondary {% if view_mode == 'grid' %}active{% endif %}">
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="bi bi-grid-fill" viewBox="0 0 16 16">
+        <path d="M1 2.5A1.5 1.5 0 0 1 2.5 1h3A1.5 1.5 0 0 1 7 2.5v3A1.5 1.5 0 0 1 5.5 7h-3A1.5 1.5 0 0 1 1 5.5v-3zm8 0A1.5 1.5 0 0 1 10.5 1h3A1.5 1.5 0 0 1 15 2.5v3A1.5 1.5 0 0 1 13.5 7h-3A1.5 1.5 0 0 1 9 5.5v-3zm-8 8A1.5 1.5 0 0 1 2.5 9h3A1.5 1.5 0 0 1 7 10.5v3A1.5 1.5 0 0 1 5.5 15h-3A1.5 1.5 0 0 1 1 13.5v-3zm8 0A1.5 1.5 0 0 1 10.5 9h3a1.5 1.5 0 0 1 1.5 1.5v3a1.5 1.5 0 0 1-1.5 1.5h-3A1.5 1.5 0 0 1 9 13.5v-3z"/>
+      </svg>
+    </a>
+    <a href="?{% url_replace view='list' %}" 
+       class="btn btn-outline-secondary {% if view_mode == 'list' %}active{% endif %}">
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="bi bi-list" viewBox="0 0 16 16">
+        <path fill-rule="evenodd" d="M2.5 12a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5z"/>
+      </svg>
+    </a>
+  </div>
+</div>
+
+{% if view_mode == 'list' %}
+<div class="list-view">
+  {% for listing in page_obj %}
+    <div class="card mb-2 border-0 shadow-sm listing-item position-relative {% if listing.is_promoted %}card-promoted{% endif %}">
+      {% if listing.pk in favorite_ids and user.is_authenticated and enable_favorites %}
+        <div class="position-absolute bottom-0 end-0 m-1" style="z-index: 2;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#dc3545" viewBox="0 0 16 16">
+            <path fill-rule="evenodd" d="M8 1.314C12.438-3.248 23.534 4.735 8 15-7.534 4.736 3.562-3.248 8 1.314z"/>
+          </svg>
+        </div>
+      {% endif %}
+      <div class="card-body p-2">
+        <div class="row g-2 align-items-start">
+          <div class="col-auto">
+            <a href="{% url 'listings:detail' listing.pk %}">
+              {% with listing.images.first as main_image %}
+                {% if main_image %}
+                  <img src="{{ main_image.thumbnail_url|default:main_image.image.url }}" class="rounded" width="72" height="72" style="object-fit: cover;" alt="" loading="lazy">
+                {% else %}
+                  {% get_category_image listing.category as cat_image %}
+                  {% if cat_image %}
+                    <img src="{{ cat_image }}" class="rounded" width="72" height="72" style="object-fit: contain; background: #f8f8f8;" alt="">
+                  {% else %}
+                    <div class="bg-light rounded d-flex align-items-center justify-content-center" style="width:72px; height:72px;">
+                      <span class="text-muted small">Нет фото</span>
+                    </div>
+                  {% endif %}
+                {% endif %}
+              {% endwith %}
+            </a>
+          </div>
+          <div class="col">
+            <a href="{% url 'listings:detail' listing.pk %}" class="text-decoration-none text-dark fw-bold d-inline-block mb-1" style="font-size:0.85rem;">{{ listing.title }}</a>
+            <div class="d-flex align-items-center small text-muted">
+              {% if listing.price %}
+                <span class="fw-bold text-success me-2">{{ listing.price|price_display }} ₽</span>
+              {% endif %}
+            </div>
+            <div class="small text-muted mt-1">{{ listing.created_at|short_date }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  {% empty %}
+    <div class="text-center py-5 text-muted">Пока нет объявлений.</div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="row g-2">
+  {% for listing in page_obj %}
+    <div class="col-6">
+      <a href="{% url 'listings:detail' listing.pk %}" class="text-decoration-none text-dark">
+        <div class="card h-100 border-0 shadow-sm position-relative {% if listing.is_promoted %}card-promoted{% endif %}">
+          {% with listing.images.first as main_image %}
+            {% if main_image %}
+              <img src="{{ main_image.thumbnail_url|default:main_image.image.url }}" class="card-img-top" alt="{{ listing.title }}" style="height: 120px; object-fit: cover;" loading="lazy">
+            {% else %}
+              {% get_category_image listing.category as cat_image %}
+              {% if cat_image %}
+                <img src="{{ cat_image }}" class="card-img-top" alt="{{ listing.title }}" style="height: 120px; object-fit: contain; background: #f8f8f8;">
+              {% else %}
+                <div class="bg-light d-flex align-items-center justify-content-center" style="height: 120px;">
+                  <span class="text-muted small">Нет фото</span>
+                </div>
+              {% endif %}
+            {% endif %}
+          {% endwith %}
+          <div class="card-body p-2 d-flex flex-column">
+            {% if listing.price %}
+              <div class="fw-bold fs-6 text-success">{{ listing.price|price_display }} ₽</div>
+            {% endif %}
+            <div class="small text-truncate fw-bold" style="font-size:0.8rem;">{{ listing.title }}</div>
+            <div class="mt-auto small text-muted">{{ listing.created_at|short_date }}</div>
+          </div>
+        </div>
+      </a>
+    </div>
+  {% empty %}
+    <div class="col-12 text-center py-5 text-muted">Пока нет объявлений.</div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- Пагинация -->
+<nav class="mt-4">
+  <ul class="pagination pagination-sm justify-content-center">
+    {% if page_obj.has_previous %}
+      <li class="page-item"><a class="page-link" href="?{% url_replace page=1 %}">&laquo;</a></li>
+      <li class="page-item"><a class="page-link" href="?{% url_replace page=page_obj.previous_page_number %}">←</a></li>
+    {% endif %}
+    <li class="page-item disabled"><span class="page-link">{{ page_obj.number }} из {{ page_obj.paginator.num_pages }}</span></li>
+    {% if page_obj.has_next %}
+      <li class="page-item"><a class="page-link" href="?{% url_replace page=page_obj.next_page_number %}">→</a></li>
+      <li class="page-item"><a class="page-link" href="?{% url_replace page=page_obj.paginator.num_pages }}">&raquo;</a></li>
+    {% endif %}
+  </ul>
+</nav>
+{% endblock %}

@@ -1,5 +1,5 @@
-<!DOCTYPE html>
-<html lang="ru">
+до<!DOCTYPE html>
+<html lang="ru" data-bs-theme="{{ user_theme|default:'system' }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,34 +9,47 @@
     {% load static %}
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'css/dark-theme.css' %}">
     <link rel="icon" type="image/x-icon" href="{% static 'favicon.ico' %}">
+    <script>
+        (function() {
+            var theme = '{{ user_theme|default:"system" }}';
+            var html = document.documentElement;
+            function applyTheme() {
+                if (theme === 'system') {
+                    html.setAttribute('data-bs-theme',
+                        window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+                    );
+                } else {
+                    html.setAttribute('data-bs-theme', theme);
+                }
+            }
+            applyTheme();
+            if (theme === 'system') {
+                window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
+            }
+        })();
+    </script>
 </head>
 <body>
     <header class="bg-white border-bottom py-2 sticky-top">
         <div class="container">
             <div class="row align-items-center g-2">
-                <!-- Логотип (слева) -->
                 <div class="col-auto">
                     <a href="{% url 'listings:index' %}" class="d-inline-block">
                         <img src="{% static 'images/logo.png' %}" alt="{{ site_name }}" height="36">
                     </a>
                 </div>
-
-                <!-- Кнопка "Новое объявление" для десктопа (скрыта на мобильных) -->
                 <div class="col-auto d-none d-sm-inline-block">
                     {% if user.is_authenticated %}
                         <a href="{% url 'listings:create' %}" class="btn btn-success btn-sm">+ Новое объявление</a>
                     {% endif %}
                 </div>
-
-                <!-- Центральная кнопка для мобильных (видна только на xs) -->
                 <div class="col text-center d-sm-none">
                     {% if user.is_authenticated %}
                         <a href="{% url 'listings:create' %}" class="btn btn-success btn-sm">+ Новое</a>
                     {% endif %}
                 </div>
-
-                <!-- Поиск (на десктопе занимает всё доступное пространство) -->
 <div class="col d-none d-sm-block">
     <form action="{% url 'search:search' %}" method="get">
         <div class="search-wrapper">
@@ -51,18 +64,25 @@
         </div>
     </form>
 </div>
-                <!-- Блок пользователя (прижат к правому краю) -->
                 <div class="col-auto ms-auto">
                     {% if user.is_authenticated %}
                         <div class="dropdown">
-                            <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle" data-bs-toggle="dropdown" role="button" aria-expanded="false">
-                                {% if user.profile.avatar %}
-                                    <img src="{{ user.profile.avatar.url }}" width="32" height="32" class="rounded-circle">
-                                {% else %}
-                                    <div class="bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center" style="width:32px; height:32px;">
-                                        {{ user.username|slice:":1"|upper }}
-                                    </div>
-                                {% endif %}
+                            <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle" data-bs-toggle="dropdown" role="button" aria-expanded="false" id="userMenuToggle">
+                                <div class="position-relative">
+                                    {% if user.profile.avatar %}
+                                        <img src="{{ user.profile.avatar.url }}" width="32" height="32" class="rounded-circle">
+                                    {% else %}
+                                        <div class="bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center" style="width:32px; height:32px;">
+                                            {{ user.username|slice:":1"|upper }}
+                                        </div>
+                                    {% endif %}
+                                    {% if unread_messages_count > 0 %}
+                                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" 
+                                          style="font-size:0.55rem; min-width:16px; height:16px; line-height:10px;" id="unreadBadgeAvatar">
+                                        {{ unread_messages_count }}
+                                    </span>
+                                    {% endif %}
+                                </div>
                                 <span class="d-none d-sm-inline ms-2">{{ user.profile.get_display_name }}</span>
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end">
@@ -70,6 +90,9 @@
                                 {% if enable_favorites %}
                                   <li><a class="dropdown-item" href="{% url 'listings:favorites' %}">❤ Избранные</a></li>
                                 {% endif %}
+                                <li><a class="dropdown-item" href="{% url 'msgs_app:inbox' %}">
+                                  ✉ Сообщения{% if unread_messages_count > 0 %} <span class="badge bg-danger rounded-pill">{{ unread_messages_count }}</span>{% endif %}
+                                </a></li>
                                 <li><a class="dropdown-item" href="{% url 'users:profile' %}">Настройки</a></li>
                                 <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item" href="{% url 'users:logout' %}">Выйти</a></li>
@@ -82,18 +105,10 @@
                         </div>
                     {% endif %}
                 </div>
-
-                <!-- Поиск на мобильных (отдельной строкой) -->
 <div class="col-12 d-block d-sm-none mt-1">
     <form action="{% url 'search:search' %}" method="get">
         <div class="search-wrapper">
-            <input type="text" name="q" class="form-control form-control-sm" placeholder="Поиск...">
-            <select class="form-select form-select-sm" name="category" style="padding-left: 2px; padding-right: 20px;">
-                <option value="">Все</option>
-                {% for cat in all_categories %}
-                    <option value="{{ cat.slug }}">{{ cat.name }}</option>
-                {% endfor %}
-            </select>
+            <input type="text" name="q" class="form-control form-control-sm" placeholder="Поиск по объявлениям...">
             <button class="btn btn-primary btn-sm" type="submit" style="flex-shrink: 0;">Найти</button>
         </div>
     </form>
@@ -116,7 +131,7 @@
 </div>    
 </main>
 
-<footer class="bg-white border-top mt-5 py-4">
+<footer class="bg-white border-top mt-5 py-4 d-none d-sm-block">
   <div class="container">
     <div class="d-flex flex-wrap justify-content-between align-items-center small">
       <div class="text-center text-md-start mb-2 mb-md-0">
@@ -128,10 +143,314 @@
     </div>
   </div>
 </footer>
-    <!-- Bootstrap JS -->
+
+    {% load category_tags %}
+    <nav class="bottom-nav d-sm-none">
+        <a href="{% url 'listings:index' %}" class="nav-item" data-nav="home">
+            <span class="nav-icon">🏠</span>
+            <span class="nav-label">Главная</span>
+        </a>
+        <a href="#" class="nav-item" data-nav="search" data-bs-toggle="modal" data-bs-target="#categorySelectModal">
+            <span class="nav-icon">🔍</span>
+            <span class="nav-label">Поиск</span>
+        </a>
+        <a href="{% url 'listings:create' %}" class="nav-item" data-nav="add">
+            <span class="nav-icon">➕</span>
+            <span class="nav-label">Добавить</span>
+        </a>
+        {% if enable_favorites %}
+        <a href="{% url 'listings:favorites' %}" class="nav-item" data-nav="favorites">
+            <span class="nav-icon">❤️</span>
+            <span class="nav-label">Избранное</span>
+        </a>
+        {% else %}
+        <a href="{% url 'listings:index' %}" class="nav-item" data-nav="favorites" style="opacity:0.4; pointer-events:none;">
+            <span class="nav-icon">❤️</span>
+            <span class="nav-label">Избранное</span>
+        </a>
+        {% endif %}
+        {% if user.is_authenticated %}
+        <a href="{% url 'users:profile' %}" class="nav-item" data-nav="profile">
+            <span class="nav-icon">👤</span>
+            <span class="nav-label">Профиль</span>
+        </a>
+        {% else %}
+        <a href="{% url 'users:login' %}" class="nav-item" data-nav="profile">
+            <span class="nav-icon">👤</span>
+            <span class="nav-label">Войти</span>
+        </a>
+        {% endif %}
+    </nav>
+
+    <script id="categoriesData" type="application/json">
+    [
+        {% for cat in all_categories %}
+        {
+            "name": "{{ cat.name|escapejs }}",
+            "slug": "{{ cat.slug|escapejs }}",
+            "image_url": {% if cat.image %}"{{ cat.image.url }}"{% else %}null{% endif %},
+            "children": [
+                {% for child in cat.children.all %}
+                {
+                    "name": "{{ child.name|escapejs }}",
+                    "slug": "{{ child.slug|escapejs }}",
+                    "image_url": {% if child.image %}"{{ child.image.url }}"{% else %}null{% endif %},
+                    "children": []
+                }{% if not forloop.last %},{% endif %}
+                {% endfor %}
+            ]
+        }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ]
+    </script>
+
+    <div class="modal fade" id="categorySelectModal" tabindex="-1" aria-labelledby="categorySelectModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-fullscreen-sm-down">
+            <div class="modal-content">
+                <div class="modal-header border-bottom">
+                    <button type="button" class="btn btn-link text-decoration-none p-0 me-2 d-none" id="categoryBackBtn" aria-label="Назад">
+                        <span style="font-size:1.2rem;">←</span>
+                    </button>
+                    <h5 class="modal-title" id="categorySelectModalLabel">Категории</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                </div>
+                <div class="modal-body p-0" id="modalCategoryBody">
+                    <div id="categoryLevelContainer"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- Inputmask для масок телефона -->
     <script src="https://cdn.jsdelivr.net/npm/inputmask@5/dist/inputmask.min.js"></script>
+    <script>
+    var unreadCount = {{ unread_messages_count|default:0 }};
+    var previousUnreadCount = unreadCount;
+
+    function updateUnreadUI(count) {
+        var badgeAvatar = document.getElementById('unreadBadgeAvatar');
+        if (count > 0) {
+            if (!badgeAvatar) {
+                var toggle = document.getElementById('userMenuToggle');
+                if (toggle) {
+                    var avatarDiv = toggle.querySelector('.position-relative');
+                    if (avatarDiv) {
+                        var newBadge = document.createElement('span');
+                        newBadge.className = 'position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger';
+                        newBadge.id = 'unreadBadgeAvatar';
+                        newBadge.style.cssText = 'font-size:0.55rem; min-width:16px; height:16px; line-height:10px;';
+                        newBadge.textContent = count;
+                        avatarDiv.appendChild(newBadge);
+                    }
+                }
+            } else {
+                badgeAvatar.textContent = count;
+                badgeAvatar.style.display = '';
+            }
+        } else if (badgeAvatar) {
+            badgeAvatar.style.display = 'none';
+        }
+        var msgMenuItems = document.querySelectorAll('.dropdown-item[href*="/messages/"]');
+        msgMenuItems.forEach(function(item) {
+            var existingBadge = item.querySelector('.badge');
+            if (count > 0) {
+                if (existingBadge) {
+                    existingBadge.textContent = count;
+                } else {
+                    var span = document.createElement('span');
+                    span.className = 'badge bg-danger rounded-pill';
+                    span.textContent = count;
+                    item.appendChild(span);
+                }
+            } else if (existingBadge) {
+                existingBadge.remove();
+            }
+        });
+        if (count > 0) {
+            if (!document.title.startsWith('(' + count + ') ')) {
+                document.title = '(' + count + ') ' + document.title.replace(/^\(\d+\)\s*/, '');
+            }
+        } else {
+            document.title = document.title.replace(/^\(\d+\)\s*/, '');
+        }
+    }
+
+    function checkNewMessages() {
+        // Не показываем уведомления на странице сообщений
+        if (window.location.pathname.indexOf('/messages/') !== -1) {
+            return;
+        }
+        fetch('/messages/api/unread-count/')
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                var newCount = data.count || 0;
+                if (newCount !== previousUnreadCount) {
+                    if (newCount > previousUnreadCount) {
+                        if (document.hidden) {
+                            if ('Notification' in window && Notification.permission === 'granted') {
+                                new Notification('Новое сообщение на {{ site_name|escapejs }}', {
+                                    body: 'У вас ' + newCount + ' непрочитанных сообщений',
+                                    icon: '/static/favicon.ico'
+                                });
+                            }
+                        }
+                        var alertContainer = document.querySelector('.container.mt-3');
+                        if (alertContainer) {
+                            var alertDiv = document.createElement('div');
+                            alertDiv.className = 'alert alert-info alert-dismissible fade show';
+                            alertDiv.innerHTML = '✉ У вас <strong>' + newCount + '</strong> непрочитанных сообщений. <a href="/messages/" class="alert-link">Перейти</a><button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
+                            alertContainer.insertBefore(alertDiv, alertContainer.firstChild);
+                        }
+                    }
+                    previousUnreadCount = newCount;
+                    updateUnreadUI(newCount);
+                }
+            })
+            .catch(function() {});
+    }
+
+    if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+    }
+
+    setInterval(checkNewMessages, 30000);
+
+    document.addEventListener('visibilitychange', function() {
+        if (!document.hidden) checkNewMessages();
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+        var currentPath = window.location.pathname;
+        var navItems = document.querySelectorAll('.bottom-nav .nav-item');
+        navItems.forEach(function(item) {
+            var href = item.getAttribute('href');
+            if (href && href !== '#') {
+                if (currentPath === href || (href !== '/' && currentPath.startsWith(href))) {
+                    item.classList.add('active');
+                }
+            }
+        });
+        if (currentPath.indexOf('/favorites') !== -1) {
+            var favItem = document.querySelector('.bottom-nav .nav-item[data-nav="favorites"]');
+            if (favItem) favItem.classList.add('active');
+        }
+        if (currentPath.indexOf('/users/') !== -1) {
+            var profileItem = document.querySelector('.bottom-nav .nav-item[data-nav="profile"]');
+            if (profileItem) profileItem.classList.add('active');
+        }
+        if (currentPath.indexOf('/messages/') !== -1) {
+            var msgItem = document.querySelector('.bottom-nav .nav-item[data-nav="messages"]');
+            if (msgItem) msgItem.classList.add('active');
+        }
+        if (currentPath.indexOf('/create') !== -1 || currentPath.indexOf('/edit') !== -1) {
+            var addItem = document.querySelector('.bottom-nav .nav-item[data-nav="add"]');
+            if (addItem) addItem.classList.add('active');
+        }
+    });
+
+    (function() {
+        var levelContainer = document.getElementById('categoryLevelContainer');
+        var backBtn = document.getElementById('categoryBackBtn');
+        var modalTitle = document.getElementById('categorySelectModalLabel');
+        var historyStack = [];
+        var dataScript = document.getElementById('categoriesData');
+        if (!dataScript || !levelContainer) return;
+        var rootCategories = [];
+        try {
+            rootCategories = JSON.parse(dataScript.textContent);
+        } catch(e) { return; }
+
+        function renderLevel(categories, title) {
+            levelContainer.innerHTML = '';
+            modalTitle.textContent = title || 'Категории';
+            if (historyStack.length > 0) {
+                backBtn.classList.remove('d-none');
+            } else {
+                backBtn.classList.add('d-none');
+            }
+            var searchDiv = document.createElement('div');
+            searchDiv.className = 'p-3 border-bottom';
+            searchDiv.innerHTML = '<form action="/search/" method="get">' +
+                '<div class="input-group">' +
+                '<input type="text" name="q" class="form-control" placeholder="Поиск по объявлениям...">' +
+                '<button class="btn btn-primary" type="submit">Найти</button>' +
+                '</div></form>';
+            levelContainer.appendChild(searchDiv);
+            var list = document.createElement('ul');
+            list.className = 'list-unstyled mb-0';
+            categories.forEach(function(cat) {
+                var li = document.createElement('li');
+                li.className = 'border-bottom';
+                var isGroup = cat.children && cat.children.length > 0;
+                var a = document.createElement('a');
+                a.href = isGroup ? '#' : '/categories/' + cat.slug + '/';
+                a.className = 'd-flex align-items-center justify-content-between px-3 py-3 text-decoration-none category-tree-item';
+                var leftSpan = document.createElement('span');
+                leftSpan.className = 'd-flex align-items-center';
+                var icon = document.createElement('span');
+                if (cat.image_url) {
+                    icon.style.cssText = 'width:28px;height:28px;border-radius:50%;display:inline-flex;flex-shrink:0;margin-right:10px;overflow:hidden;';
+                    var img = document.createElement('img');
+                    img.src = cat.image_url;
+                    img.style.cssText = 'width:100%;height:100%;object-fit:cover;';
+                    img.alt = cat.name;
+                    icon.appendChild(img);
+                } else {
+                    icon.style.cssText = 'width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:0.75rem;flex-shrink:0;margin-right:10px;';
+                    icon.className = 'cat-icon-default';
+                    icon.textContent = cat.name.charAt(0).toUpperCase();
+                }
+                leftSpan.appendChild(icon);
+                var nameSpan = document.createElement('span');
+                nameSpan.textContent = cat.name;
+                nameSpan.className = 'cat-name';
+                leftSpan.appendChild(nameSpan);
+                a.appendChild(leftSpan);
+                if (isGroup) {
+                    var arrow = document.createElement('span');
+                    arrow.textContent = '›';
+                    arrow.className = 'cat-arrow';
+                    a.appendChild(arrow);
+                    a.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        historyStack.push({
+                            title: modalTitle.textContent,
+                            categories: categories
+                        });
+                        renderLevel(cat.children, cat.name);
+                    });
+                } else {
+                    a.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        var modalEl = document.getElementById('categorySelectModal');
+                        var bootstrapModal = bootstrap.Modal.getInstance(modalEl);
+                        if (bootstrapModal) bootstrapModal.hide();
+                        window.location.href = '/categories/' + cat.slug + '/';
+                    });
+                }
+                li.appendChild(a);
+                list.appendChild(li);
+            });
+            levelContainer.appendChild(list);
+        }
+        backBtn.addEventListener('click', function() {
+            if (historyStack.length > 0) {
+                var prev = historyStack.pop();
+                renderLevel(prev.categories, prev.title);
+            }
+        });
+        function renderInitial() {
+            historyStack = [];
+            renderLevel(rootCategories, 'Категории');
+        }
+        var categoryModal = document.getElementById('categorySelectModal');
+        if (categoryModal) {
+            categoryModal.addEventListener('show.bs.modal', function() {
+                renderInitial();
+            });
+        }
+    })();
+    </script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>

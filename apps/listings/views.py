@@ -15,9 +15,10 @@ from django.conf import settings
 from .models import Listing, ListingImage, Favorite
 from .forms import ListingForm
 from categories.models import Category
-from datetime import date, timedelta
 import logging
-from apps.utils import compress_uploaded_image, log_debug
+from apps.utils import compress_uploaded_image, log_debug, get_device_template
+
+T = lambda r, t: get_device_template(r, t)
 from ratings.models import Rating
 
 logger = logging.getLogger('upload')
@@ -40,7 +41,8 @@ def index_view(request):
     favorite_ids = set()
     if request.user.is_authenticated:
         favorite_ids = set(Favorite.objects.filter(user=request.user).values_list('listing_id', flat=True))
-    return render(request, 'listings/index.html', {
+    template_name = get_device_template(request, 'listings/index.html')
+    return render(request, template_name, {
         'page_obj': page_obj,
         'view_mode': view_mode,
         'favorite_ids': favorite_ids,
@@ -101,7 +103,8 @@ def detail_view(request, pk):
         'rating_count': rating_count,
         'my_rating': my_rating,
     }
-    return render(request, 'listings/detail.html', context)
+    template_name = get_device_template(request, 'listings/detail.html')
+    return render(request, template_name, context)
 
 @login_required
 def create_listing_view(request):
@@ -112,7 +115,8 @@ def create_listing_view(request):
         form_token = str(uuid.uuid4())
         request.session['form_token'] = form_token
         form = ListingForm()
-        return render(request, 'listings/create.html', {
+        template_name = get_device_template(request, 'listings/create.html')
+        return render(request, template_name, {
             'form': form,
             'selected_category_slug': selected_category_slug,
             'form_token': form_token,
@@ -133,7 +137,8 @@ def create_listing_view(request):
         messages.error(request, 'Пожалуйста, выберите категорию. Фотографии придётся загрузить заново.')
         # Генерируем новый токен, чтобы можно было исправить ошибку
         request.session['form_token'] = str(uuid.uuid4())
-        return render(request, 'listings/create.html', {
+        template_name = get_device_template(request, 'listings/create.html')
+        return render(request, template_name, {
             'form': form,
             'selected_category_slug': '',
             'form_token': request.session['form_token'],
@@ -144,7 +149,8 @@ def create_listing_view(request):
     except Category.DoesNotExist:
         messages.error(request, 'Выбранная категория не существует.')
         request.session['form_token'] = str(uuid.uuid4())
-        return render(request, 'listings/create.html', {
+        template_name = get_device_template(request, 'listings/create.html')
+        return render(request, template_name, {
             'form': form,
             'selected_category_slug': '',
             'form_token': request.session['form_token'],
@@ -185,7 +191,8 @@ def create_listing_view(request):
         except IntegrityError as e:
             logger.error(f'Ошибка целостности БД: {e}')
             messages.error(request, 'Не удалось сохранить фотографии. Попробуйте ещё раз.')
-            return render(request, 'listings/create.html', {
+            template_name = get_device_template(request, 'listings/create.html')
+            return render(request, template_name, {
                 'form': form,
                 'selected_category_slug': '',
                 'form_token': request.session.get('form_token', ''),
@@ -193,7 +200,8 @@ def create_listing_view(request):
         except Exception as e:
             logger.exception(f'Неизвестная ошибка при загрузке изображений: {e}')
             messages.error(request, 'Ошибка при загрузке фотографий.')
-            return render(request, 'listings/create.html', {
+            template_name = get_device_template(request, 'listings/create.html')
+            return render(request, template_name, {
                 'form': form,
                 'selected_category_slug': '',
                 'form_token': request.session.get('form_token', ''),
@@ -210,7 +218,8 @@ def create_listing_view(request):
     else:
         # Если форма невалидна, генерируем новый токен
         request.session['form_token'] = str(uuid.uuid4())
-        return render(request, 'listings/create.html', {
+        template_name = get_device_template(request, 'listings/create.html')
+        return render(request, template_name, {
             'form': form,
             'selected_category_slug': '',
             'form_token': request.session['form_token'],
@@ -262,7 +271,8 @@ def edit_listing_view(request, pk):
             except IntegrityError:
                 messages.error(request, 'Не удалось сохранить фотографии. Попробуйте ещё раз.')
                 request.session['form_token'] = str(uuid.uuid4())
-                return render(request, 'listings/edit.html', {
+                template_name = get_device_template(request, 'listings/edit.html')
+                return render(request, template_name, {
                     'form': form,
                     'listing': listing,
                     'existing_images': listing.images.all(),
@@ -298,7 +308,8 @@ def edit_listing_view(request, pk):
         'param_values': listing.parameters or {},
         'form_token': form_token,
     }
-    return render(request, 'listings/edit.html', context)
+    template_name = get_device_template(request, 'listings/edit.html')
+    return render(request, template_name, context)
 
 @login_required
 def delete_listing_view(request, pk):
@@ -312,7 +323,8 @@ def delete_listing_view(request, pk):
         messages.success(request, 'Объявление удалено.')
         return redirect('users:my_listings')
 
-    return render(request, 'listings/delete_confirm.html', {'listing': listing})
+    template_name = get_device_template(request, 'listings/delete_confirm.html')
+    return render(request, template_name, {'listing': listing})
 
 
 @login_required
@@ -335,7 +347,8 @@ def favorite_list_view(request):
         'listing__author', 'listing__category'
     ).prefetch_related('listing__images')
     listings = [fav.listing for fav in favorites]
-    return render(request, 'listings/favorites.html', {
+    template_name = get_device_template(request, 'listings/favorites.html')
+    return render(request, template_name, {
         'listings': listings,
     })
 
@@ -353,7 +366,8 @@ def complete_listing_view(request, pk):
         messages.success(request, 'Объявление завершено.')
         return redirect('users:my_listings')
 
-    return render(request, 'listings/complete_confirm.html', {'listing': listing})
+    template_name = get_device_template(request, 'listings/complete_confirm.html')
+    return render(request, template_name, {'listing': listing})
 
 
 def user_listings_view(request, username):
@@ -373,7 +387,8 @@ def user_listings_view(request, username):
     if request.user.is_authenticated:
         favorite_ids = set(Favorite.objects.filter(user=request.user).values_list('listing_id', flat=True))
 
-    return render(request, 'listings/index.html', {
+    template_name = get_device_template(request, 'listings/index.html')
+    return render(request, template_name, {
         'page_obj': page_obj,
         'view_mode': request.session.get('view_mode', 'grid'),
         'favorite_ids': favorite_ids,

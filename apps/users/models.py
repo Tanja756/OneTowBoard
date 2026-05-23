@@ -12,6 +12,11 @@ class Profile(models.Model):
         ('person', 'Частное лицо'),
         ('company', 'Компания'),
     )
+    THEME_CHOICES = (
+        ('light', 'Светлая'),
+        ('dark', 'Тёмная'),
+        ('system', 'Системная'),
+    )
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     phone = models.CharField(max_length=20, blank=True, verbose_name='Телефон')
     city = models.CharField(max_length=100, blank=True, verbose_name='Город')
@@ -20,6 +25,18 @@ class Profile(models.Model):
     display_name = models.CharField(max_length=100, blank=True, verbose_name='Отображаемое имя')
     email_verified = models.BooleanField(default=False, verbose_name='Email подтверждён')
     verification_token = models.CharField(max_length=64, blank=True, verbose_name='Токен верификации')
+    theme = models.CharField(
+        max_length=10,
+        choices=THEME_CHOICES,
+        default='system',
+        verbose_name='Тема оформления'
+    )
+    telegram_chat_id = models.CharField(
+        max_length=100, blank=True, default='',
+        verbose_name='Telegram Chat ID',
+        help_text='ID чата для получения уведомлений в Telegram'
+    )
+    last_activity = models.DateTimeField(null=True, blank=True, verbose_name='Последняя активность')
 
     def __str__(self):
         return f'Профиль {self.user.username}'

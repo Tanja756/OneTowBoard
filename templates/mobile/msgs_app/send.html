@@ -1,0 +1,37 @@
+{% extends 'mobile/base.html' %}
+{% load static %}
+
+{% block title %}Новое сообщение{% endblock %}
+
+{% block content %}
+<div class="px-0 d-flex flex-column" style="height: calc(100vh - 130px);">
+  <!-- Заголовок -->
+  <div class="d-flex align-items-center border-bottom px-2 py-1 flex-shrink-0">
+    <a href="{% url 'listings:detail' listing.id %}" class="text-decoration-none text-secondary me-2" style="font-size:1.2rem;">←</a>
+    <div class="small">
+      <span class="fw-bold">{{ listing.author.profile.get_display_name }}</span>
+      <span class="text-muted">по {{ listing.title|truncatechars:40 }}</span>
+    </div>
+  </div>
+
+  <!-- Форма -->
+  <div class="d-flex flex-column justify-content-center flex-grow-1 px-3">
+    <form method="post">
+      {% csrf_token %}
+      <div class="mb-3">
+        <textarea name="text" class="form-control" rows="5" placeholder="Напишите сообщение..." required id="id_text"></textarea>
+      </div>
+      <button type="submit" class="btn btn-primary w-100 mb-2">Отправить</button>
+      <a href="{% url 'listings:detail' listing.id %}" class="btn btn-outline-secondary w-100">Отмена</a>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('id_text').focus();
+});
+</script>
+{% endblock %}

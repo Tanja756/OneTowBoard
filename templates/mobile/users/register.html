@@ -1,0 +1,110 @@
+{% extends 'mobile/base.html' %}
+{% load static %}
+
+{% block title %}Регистрация — {{ site_name|default:'OneTwoBoard' }}{% endblock %}
+{% block description %}Создайте аккаунт на {{ site_name|default:'OneTwoBoard' }} для подачи объявлений.{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6 col-lg-5">
+    <div class="card shadow-sm">
+      <div class="card-body p-4">
+        <h1 class="h4 mb-3 text-center">Регистрация</h1>
+        <form method="post" novalidate>
+          {% csrf_token %}
+          
+          {% if form.errors %}
+            <div class="alert alert-danger">
+              Пожалуйста, исправьте ошибки ниже.
+            </div>
+          {% endif %}
+
+          <div class="mb-3">
+            <label class="form-label">{{ form.username.label }}</label>
+            {{ form.username }}
+            {% if form.username.errors %}
+              <div class="text-danger small">{{ form.username.errors }}</div>
+            {% endif %}
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">{{ form.email.label }}</label>
+            {{ form.email }}
+            {% if form.email.errors %}
+              <div class="text-danger small">{{ form.email.errors }}</div>
+            {% endif %}
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">{{ form.display_name.label }}</label>
+            {{ form.display_name }}
+            <div class="form-text">Необязательно. Если оставить пустым, будет использоваться логин.</div>
+            {% if form.display_name.errors %}
+              <div class="text-danger small">{{ form.display_name.errors }}</div>
+            {% endif %}
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">{{ form.phone.label }}</label>
+            {{ form.phone }}
+            {% if form.phone.errors %}
+              <div class="text-danger small">{{ form.phone.errors }}</div>
+            {% endif %}
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">{{ form.city.label }}</label>
+            {{ form.city }}
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">{{ form.profile_type.label }}</label>
+            {{ form.profile_type }}
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">{{ form.password1.label }}</label>
+            {{ form.password1 }}
+            {% if form.password1.errors %}
+              <div class="text-danger small">{{ form.password1.errors }}</div>
+            {% endif %}
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">{{ form.password2.label }}</label>
+            {{ form.password2 }}
+            {% if form.password2.errors %}
+              <div class="text-danger small">{{ form.password2.errors }}</div>
+            {% endif %}
+          </div>
+
+          <button type="submit" class="btn btn-primary w-100">Зарегистрироваться</button>
+        </form>
+        <p class="mt-3 mb-0 text-center">Уже есть аккаунт? <a href="{% url 'users:login' %}">Войти</a></p>
+
+{% if enable_google_auth %}
+        <hr>
+        
+        <div class="text-center mt-3">
+          <a href="{% url 'google_login' %}" class="btn btn-outline-danger w-100">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-google me-2" viewBox="0 0 16 16">
+              <path d="M15.545 6.558a9.42 9.42 0 0 1 .139 1.626c0 2.434-.87 4.492-2.384 5.885h.002C11.978 15.292 10.158 16 8 16A8 8 0 1 1 8 0a7.689 7.689 0 0 1 5.352 2.082l-2.284 2.284A4.347 4.347 0 0 0 8 3.166c-2.087 0-3.86 1.408-4.492 3.304a4.792 4.792 0 0 0 0 3.063h.003c.635 1.893 2.405 3.301 4.492 3.301 1.078 0 2.004-.276 2.722-.764h-.003a3.702 3.702 0 0 0 1.599-2.431H8v-3.08h7.545z"/>
+            </svg>
+            Зарегистрироваться через Google
+          </a>
+        </div>
+{% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/inputmask@5/dist/inputmask.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    Inputmask().mask(document.getElementById('id_phone'));
+});
+</script>
+{% endblock %}

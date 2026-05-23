@@ -6,11 +6,13 @@ from django.template.loader import render_to_string
 from datetime import date
 from .models import Category
 from listings.models import Listing, Favorite
+from apps.utils import get_device_template
 
 
 def list_view(request):
     categories = Category.objects.filter(parent__isnull=True).order_by('order', 'name')
-    return render(request, 'categories/list.html', {'categories': categories})
+    template_name = get_device_template(request, 'categories/list.html')
+    return render(request, template_name, {'categories': categories})
 
 def get_parameters_ajax(request):
     """Возвращает HTML с полями для параметров выбранной категории."""
@@ -104,7 +106,8 @@ def detail_view(request, slug):
     if request.user.is_authenticated:
         favorite_ids = set(Favorite.objects.filter(user=request.user).values_list('listing_id', flat=True))
 
-    return render(request, 'categories/detail.html', {
+    template_name = get_device_template(request, 'categories/detail.html')
+    return render(request, template_name, {
         'category': category,
         'view_mode': view_mode,
         'page_obj': page_obj,

@@ -1,42 +1,24 @@
-{% for param in parameters %}
-<div class="mb-2">
-    <label class="form-label small">{{ param.name }}</label>
-    {% if param.param_type == 'boolean' %}
-        <div class="form-check">
-            <input class="form-check-input" type="checkbox" name="param_{{ param.slug }}" id="param_{{ param.slug }}">
-            <label class="form-check-label" for="param_{{ param.slug }}">Да</label>
-        </div>
-    {% elif param.param_type == 'choice' %}
-        <select class="form-select form-select-sm" name="param_{{ param.slug }}">
-            <option value="">Не выбрано</option>
-            {% for choice in param.get_choices_list %}
-                <option value="{{ choice }}">{{ choice }}</option>
-            {% endfor %}
-        </select>
-    {% elif param.param_type == 'integer' %}
-        <input type="number" step="1" class="form-control form-control-sm" name="param_{{ param.slug }}" placeholder="{{ param.placeholder|default:'' }}">
-    {% elif param.param_type == 'float' %}
-        <input type="number" step="any" class="form-control form-control-sm" name="param_{{ param.slug }}" placeholder="{{ param.placeholder|default:'' }}">
-    {% elif param.param_type == 'text' %}
-        <input type="text" class="form-control form-control-sm" name="param_{{ param.slug }}" placeholder="{{ param.placeholder|default:'' }}">
-    {% elif param.param_type == 'mask' %}
-        <input type="text" class="form-control form-control-sm param-mask" name="param_{{ param.slug }}" data-mask="{{ param.mask }}" placeholder="{{ param.placeholder|default:param.mask }}">
-    {% endif %}
-</div>
-{% empty %}
-<p class="text-muted small">Нет дополнительных параметров для этой категории.</p>
-{% endfor %}
+{% load url_helpers %}
 
-{% block extra_js %}
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Инициализируем маски, если они есть
-    document.querySelectorAll('.param-mask').forEach(function(input) {
-        var mask = input.getAttribute('data-mask');
-        if (mask && window.Inputmask) {
-            Inputmask({ mask: mask, greedy: false, placeholder: '_' }).mask(input);
-        }
-    });
-});
-</script>
-{% endblock %}
+{% for param in parameters %}
+  <div class="mb-3">
+    <label class="form-label">{{ param.name }}</label>
+    {% if param.mask == 'number' %}
+      <input type="number" name="param_{{ param.slug }}" class="form-control form-control-sm"
+             placeholder="{{ param.placeholder|default:'' }}"
+             {% if param.is_required %}required{% endif %}>
+    {% elif param.mask == 'text' %}
+      <input type="text" name="param_{{ param.slug }}" class="form-control form-control-sm"
+             placeholder="{{ param.placeholder|default:'' }}"
+             {% if param.is_required %}required{% endif %}>
+    {% else %}
+      <select name="param_{{ param.slug }}" class="form-select form-select-sm"
+              {% if param.is_required %}required{% endif %}>
+        <option value="">{{ param.placeholder|default:'Выберите...' }}</option>
+        {% for choice in param.get_choices_list %}
+          <option value="{{ choice }}">{{ choice }}</option>
+        {% endfor %}
+      </select>
+    {% endif %}
+  </div>
+{% endfor %}

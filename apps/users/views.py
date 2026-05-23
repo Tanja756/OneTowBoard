@@ -12,6 +12,7 @@ from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes
 from django.contrib.auth.models import User
 from ratings.models import Rating
+from apps.utils import get_device_template
 
 @login_required
 def resend_verification_email(request):
@@ -82,7 +83,8 @@ def register_view(request):
             return redirect('listings:index')
     else:
         form = RegisterForm()
-    return render(request, 'users/register.html', {'form': form})
+    template_name = get_device_template(request, 'users/register.html')
+    return render(request, template_name, {'form': form})
 
 def login_view(request):
     if request.user.is_authenticated:
@@ -101,7 +103,8 @@ def login_view(request):
                 messages.error(request, 'Неверное имя пользователя или пароль.')
     else:
         form = UserLoginForm()
-    return render(request, 'users/login.html', {'form': form})
+    template_name = get_device_template(request, 'users/login.html')
+    return render(request, template_name, {'form': form})
 
 def logout_view(request):
     logout(request)
@@ -139,7 +142,8 @@ def profile_view(request):
             return redirect('users:profile')
         else:
             # Передаём телефон и email в шаблон, чтобы сохранить введённые значения
-            return render(request, 'users/profile.html', {
+            template_name = get_device_template(request, 'users/profile.html')
+            return render(request, template_name, {
                 'form': form,
                 'email_value': email,
                 'phone_value': phone_raw,
@@ -149,7 +153,8 @@ def profile_view(request):
     else:
         form = ProfileForm(instance=user.profile)
         phone_formatted = user.profile.get_formatted_phone()
-        return render(request, 'users/profile.html', {
+        template_name = get_device_template(request, 'users/profile.html')
+        return render(request, template_name, {
             'form': form,
             'email_value': user.email,
             'phone_value': phone_formatted if phone_formatted else '',
@@ -174,7 +179,8 @@ def my_listings_view(request):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    return render(request, 'users/my_listings.html', {
+    template_name = get_device_template(request, 'users/my_listings.html')
+    return render(request, template_name, {
         'listings': page_obj,
         'status_filter': status_filter,
     })
@@ -196,7 +202,8 @@ def complete_social_profile_view(request):
         # Валидация телефона (обязателен)
         if len(digits) != 11 or digits[0] != '7':
             messages.error(request, 'Введите корректный номер телефона (+7 (999) 999-99-99).')
-            return render(request, 'users/social_profile_required.html', {
+            template_name = get_device_template(request, 'users/social_profile_required.html')
+            return render(request, template_name, {
                 'need_name': need_name,
                 'need_phone': need_phone,
                 'need_city': need_city,
@@ -217,7 +224,8 @@ def complete_social_profile_view(request):
         messages.success(request, 'Профиль обновлён!')
         return redirect('listings:index')
 
-    return render(request, 'users/social_profile_required.html', {
+    template_name = get_device_template(request, 'users/social_profile_required.html')
+    return render(request, template_name, {
         'need_name': need_name,
         'need_phone': need_phone,
         'need_city': need_city,

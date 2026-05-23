@@ -1,0 +1,97 @@
+{% extends 'mobile/base.html' %}
+{% load static %}
+{% load url_helpers %}
+{% load listing_tags %}
+
+{% block title %}Избранные объявления — {{ site_name }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <h1 class="h3 fw-bold">Избранные объявления</h1>
+  <p class="text-muted small mb-4">Объявления, которые вы сохранили для быстрого доступа</p>
+
+  {% if listings %}
+  <div class="row g-3">
+    {% for listing in listings %}
+    <div class="col-6 col-md-4 col-lg-3">
+      <div class="card h-100 border-0 shadow-sm position-relative {% if listing.is_completed %}opacity-50{% endif %}">
+        <a href="{% url 'listings:detail' listing.pk %}" class="text-decoration-none text-dark">
+          {% with listing.images.first as main_image %}
+            {% if main_image %}
+              <img src="{{ main_image.thumbnail_url|default:main_image.image.url }}" class="card-img-top" alt="{{ listing.title }}" style="height: 150px; object-fit: cover;" loading="lazy">
+            {% else %}
+              {% load category_tags %}
+              {% get_category_image listing.category as cat_image %}
+              {% if cat_image %}
+                <img src="{{ cat_image }}" class="card-img-top" alt="{{ listing.title }}" style="height: 150px; object-fit: contain; background: #f8f8f8;">
+              {% else %}
+                <div class="bg-light d-flex align-items-center justify-content-center" style="height: 150px;">
+                  <span class="text-muted">Нет фото</span>
+                </div>
+              {% endif %}
+            {% endif %}
+          {% endwith %}
+          <div class="card-body p-2 d-flex flex-column">
+            <div style="min-height: 1.5rem;">
+              {% if listing.price %}
+                <div class="fw-bold fs-6 text-success">{{ listing.price|price_display }} ₽</div>
+              {% endif %}
+            </div>
+            <div class="small text-truncate fw-bold">{{ listing.title }}</div>
+            {% if listing.is_completed %}
+              <span class="badge bg-secondary mt-1 align-self-start">Завершено</span>
+            {% endif %}
+            <div class="mt-auto d-flex justify-content-between align-items-center small text-muted">
+              <span class="d-flex align-items-center text-truncate">
+                {{ listing.author.username }}
+              </span>
+              <span class="text-nowrap ms-2">{{ listing.created_at|short_date }}</span>
+            </div>
+          </div>
+        </a>
+        <!-- Кнопка удалить из избранного -->
+        <button class="btn btn-sm btn-outline-danger favorite-btn position-absolute top-0 end-0 m-1"
+                data-listing-id="{{ listing.pk }}"
+                title="Удалить из избранного"
+                onclick="toggleFavorite(this, {{ listing.pk }})">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-heart-fill" viewBox="0 0 16 16">
+            <path fill-rule="evenodd" d="M8 1.314C12.438-3.248 23.534 4.735 8 15-7.534 4.736 3.562-3.248 8 1.314z"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="text-center py-5">
+    <p class="text-muted">У вас пока нет избранных объявлений.</p>
+    <a href="{% url 'listings:index' %}" class="btn btn-primary">Перейти к объявлениям</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleFavorite(btn, listingId) {
+  const url = '{% url "listings:favorite_toggle" 0 %}'.replace('0', listingId);
+  fetch(url, {
+    method: 'POST',
+    headers: {
+      'X-CSRFToken': '{{ csrf_token }}',
+    },
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (!data.is_favorite) {
+      // Удаляем карточку из списка
+      const card = btn.closest('.col-6');
+      if (card) {
+        card.remove();
+      }
+    }
+  })
+  .catch(error => console.error('Ошибка:', error));
+}
+</script>
+{% endblock %}

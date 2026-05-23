@@ -1,0 +1,80 @@
+{% extends 'desktop/base.html' %}
+{% load static %}
+{% load msg_tags %}
+
+{% block title %}Переписка — {{ site_name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-3">
+  <div class="mb-3">
+    <a href="{% url 'msgs_app:inbox' %}" class="btn btn-outline-secondary btn-sm">← Назад к сообщениям</a>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <div>
+        <strong>{{ other_user.profile.get_display_name }}</strong>
+        <span class="text-muted small ms-2">по объявлению <a href="{% url 'listings:detail' listing.id %}">{{ listing.title }}</a></span>
+        <span class="ms-2">
+          {% if other_user.profile.last_activity|is_online %}
+            <span class="badge bg-success" style="font-size:0.65rem;">online</span>
+          {% elif other_user.profile.last_activity %}
+            <span class="badge bg-secondary" style="font-size:0.65rem;">{{ other_user.profile.last_activity|last_seen }}</span>
+          {% endif %}
+        </span>
+      </div>
+      <form method="post" action="{% url 'msgs_app:delete_conversation' listing.id other_user.id %}" 
+            onsubmit="return confirm('Удалить всю переписку?');" class="d-inline">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-outline-danger btn-sm">Удалить</button>
+      </form>
+    </div>
+
+    <div class="card-body" style="max-height: 500px; overflow-y: auto;" id="messagesContainer">
+      {% for msg in messages %}
+        <div class="mb-3 {% if msg.sender == request.user %}text-end{% endif %}">
+          <div class="d-inline-block {% if msg.sender == request.user %}bg-primary text-white{% else %}bg-light{% endif %} rounded-3 px-3 py-2" 
+               style="max-width: 75%; text-align: {% if msg.sender == request.user %}right{% else %}left{% endif %};">
+            <div class="small {% if msg.sender == request.user %}text-white-50{% else %}text-muted{% endif %} mb-1">
+              {{ msg.sender.profile.get_display_name }}
+            </div>
+            <div>{{ msg.text|linebreaksbr }}</div>
+            <div class="small {% if msg.sender == request.user %}text-white-50{% else %}text-muted{% endif %} mt-1">
+              {{ msg.created_at|date:"d.m.Y H:i" }}
+              {% if msg.is_read and msg.read_at and msg.sender != request.user %}
+                <span class="ms-1" title="Прочитано {{ msg.read_at|date:'d.m.Y H:i' }}">✓✓</span>
+              {% elif msg.sender == request.user %}
+                <span class="ms-1">✓</span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      {% empty %}
+        <p class="text-muted text-center">Напишите первое сообщение</p>
+      {% endfor %}
+    </div>
+
+    <div class="card-footer">
+      <form method="post">
+        {% csrf_token %}
+        <div class="mb-2">
+          {{ form.text }}
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm">Отправить</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Прокрутка вниз
+  var container = document.getElementById('messagesContainer');
+  if (container) {
+    container.scrollTop = container.scrollHeight;
+  }
+});
+</script>
+{% endblock %}

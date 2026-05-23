@@ -5,6 +5,7 @@ from django.shortcuts import render
 from datetime import date
 from listings.models import Listing, Favorite
 from categories.models import Category
+from apps.utils import get_device_template
 
 def search_view(request):
     query = request.GET.get('q', '')
@@ -65,7 +66,8 @@ def search_view(request):
     if request.user.is_authenticated:
         favorite_ids = set(Favorite.objects.filter(user=request.user).values_list('listing_id', flat=True))
 
-    return render(request, 'search/search.html', {
+    template_name = get_device_template(request, 'search/search.html')
+    return render(request, template_name, {
         'query': query,
         'page_obj': page_obj,
         'sort': sort,

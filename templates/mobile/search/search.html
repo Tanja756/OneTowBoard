@@ -1,0 +1,143 @@
+{% extends 'mobile/base.html' %}
+{% load static %}
+{% load url_helpers %}
+{% load category_tags %}
+{% load listing_tags %}
+
+{% block title %}Поиск{% if query %}: {{ query }}{% endif %} — {{ site_name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+  <!-- Боковая панель (только рекомендуемые) -->
+  <div class="col-md-3 mb-4 d-none d-md-block">
+    {% show_recommended limit=5 %}
+  </div>
+
+  <!-- Основной контент -->
+  <div class="col-md-9">
+    <h1 class="h5 mb-3 fw-bold">Поиск объявлений</h1>
+    <form method="get" action="{% url 'search:search' %}" class="mb-3">
+      <div class="input-group">
+        <input type="text" name="q" value="{{ query }}" class="form-control form-control-sm" placeholder="Что ищете?">
+        <button class="btn btn-primary btn-sm" type="submit">Найти</button>
+      </div>
+    </form>
+
+    {% if query %}
+      <div class="d-flex gap-2 mb-3 align-items-center">
+        <span class="small text-muted">Результаты по запросу «{{ query }}»</span>
+        {% if price_from or price_to %}
+          <a href="?{% url_replace price_from='' price_to='' %}" class="text-decoration-none small text-danger">✕ Сбросить фильтр</a>
+        {% endif %}
+      </div>
+
+      {% include 'includes/filter_sort.html' %}
+
+      <div class="list-view">
+        {% for listing in page_obj %}
+          <div class="card mb-2 border-0 shadow-sm listing-item position-relative {% if listing.is_promoted %}card-promoted{% endif %}">
+          {% if listing.pk in favorite_ids and user.is_authenticated and enable_favorites %}
+            <div class="position-absolute bottom-0 end-0 m-1" style="z-index: 2;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#dc3545" viewBox="0 0 16 16">
+                <path fill-rule="evenodd" d="M8 1.314C12.438-3.248 23.534 4.735 8 15-7.534 4.736 3.562-3.248 8 1.314z"/>
+              </svg>
+            </div>
+          {% endif %}
+            <div class="card-body p-2">
+              <div class="row g-2 align-items-start">
+                <!-- Фото -->
+                <div class="col-auto">
+                  <a href="{% url 'listings:detail' listing.pk %}">
+                    {% with listing.images.first as main_image %}
+                      {% if main_image %}
+                        <img src="{{ main_image.thumbnail_url|default:main_image.image.url }}" class="rounded" width="80" height="80" style="object-fit: cover;" alt="">
+                      {% else %}
+                        {% get_category_image listing.category as cat_image %}
+                        {% if cat_image %}
+                          <img src="{{ cat_image }}" class="rounded" width="80" height="80" style="object-fit: contain; background: #f8f8f8;" alt="">
+                        {% else %}
+                          <div class="bg-light rounded d-flex align-items-center justify-content-center" style="width:80px; height:80px;">
+                            <span class="text-muted small">Нет фото</span>
+                          </div>
+                        {% endif %}
+                      {% endif %}
+                    {% endwith %}
+                  </a>
+                </div>
+
+                <!-- Описание -->
+                <div class="col">
+                  <a href="{% url 'listings:detail' listing.pk %}" class="text-decoration-none text-dark fw-bold d-inline-block mb-1">{{ listing.title }}</a>
+                  <p class="text-muted small listing-description">{{ listing.description|truncatewords:15 }}</p>
+                  <div class="d-flex align-items-center small text-muted">
+                    <span class="d-flex align-items-center text-truncate me-2" style="min-width: 0;">
+                      {% if listing.author.profile %}
+                        {% if listing.author.profile.avatar %}
+                          <img src="{{ listing.author.profile.avatar.url }}" class="rounded-circle me-1" width="16" height="16" style="object-fit: cover; flex-shrink: 0;" alt="">
+                        {% else %}
+                          <div class="bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center me-1" style="width:16px; height:16px; font-size:0.5rem; flex-shrink: 0;">
+                            {{ listing.author.username|slice:":1"|upper }}
+                          </div>
+                        {% endif %}
+                      {% endif %}
+                      <span class="text-nowrap text-truncate">
+                        {% if listing.author.profile %}
+                          {{ listing.author.profile.get_display_name }}
+                        {% else %}
+                          {{ listing.author.username }}
+                        {% endif %}
+                      </span>
+                    </span>
+                    <span class="text-nowrap">{{ listing.created_at|short_date }}</span>
+                  </div>
+                </div>
+
+                <!-- Цена, город, плашки -->
+                <div class="col-auto ms-auto text-end" style="min-width: 120px;">
+                  {% if listing.price %}
+                    <div class="fw-bold text-success fs-5 lh-1">{{ listing.price|price_display }} ₽</div>
+                  {% endif %}
+                  {% if listing.author.profile.city %}
+                    <div class="text-muted small">{{ listing.author.profile.city }}</div>
+                  {% endif %}
+                  <div class="mt-1">
+                    {% if listing.is_urgent %}
+                      <span class="badge bg-danger">Срочно</span>
+                    {% endif %}
+                    {% if listing.is_promoted %}
+                      <span class="badge bg-warning text-dark">Продвижение</span>
+                    {% endif %}
+                    {% if listing.is_sticky %}
+                      <span class="badge bg-info">Закреплено</span>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+              {% if listing.is_urgent %}
+                <span class="badge bg-danger card-urgent-badge">Срочно</span>
+              {% endif %}
+            </div>
+          </div>
+        {% empty %}
+          <div class="col">Ничего не найдено.</div>
+        {% endfor %}
+      </div>
+
+      <!-- Пагинация -->
+      <nav class="mt-4">
+        <ul class="pagination justify-content-center">
+          {% if page_obj.has_previous %}
+            <li class="page-item"><a class="page-link" href="?{% url_replace page=1 %}">&laquo;</a></li>
+            <li class="page-item"><a class="page-link" href="?{% url_replace page=page_obj.previous_page_number %}">←</a></li>
+          {% endif %}
+          <li class="page-item disabled"><span class="page-link">{{ page_obj.number }} из {{ page_obj.paginator.num_pages }}</span></li>
+          {% if page_obj.has_next %}
+            <li class="page-item"><a class="page-link" href="?{% url_replace page=page_obj.next_page_number %}">→</a></li>
+            <li class="page-item"><a class="page-link" href="?{% url_replace page=page_obj.paginator.num_pages }}">&raquo;</a></li>
+          {% endif %}
+        </ul>
+      </nav>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

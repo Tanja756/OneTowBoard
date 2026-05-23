@@ -1,0 +1,71 @@
+{% load static %}
+
+<!-- Десктопное компактное дерево категорий -->
+<div id="categoryDesktopTree">
+    <ul class="list-unstyled">
+        <li class="border-bottom">
+            <a href="{% url 'listings:index' %}" class="d-flex align-items-center px-2 py-1 text-decoration-none small" style="color:#212529;">
+                <span class="d-flex align-items-center">
+                    <span style="width:18px;height:18px;border-radius:50%;display:inline-flex;flex-shrink:0;margin-right:6px;overflow:hidden;">
+                        <img src="{% static 'images/a_cat.png' %}" width="18" height="18" style="object-fit:cover;" alt="">
+                    </span>
+                    <span class="fw-semibold" style="font-size:0.85rem;">Все объявления</span>
+                </span>
+            </a>
+        </li>
+        {% for category in categories %}
+                <li class="border-bottom">
+                    <div>
+                        <a href="{% url 'categories:detail' category.slug %}"
+                           class="d-flex align-items-center justify-content-between px-2 py-1 text-decoration-none small {% if current_category == category or current_category in category.get_descendants %}fw-bold text-primary{% endif %}"
+                           style="color:#212529;">
+                            <span class="d-flex align-items-center">
+                                {% if category.image %}
+                                    <span style="width:18px;height:18px;border-radius:50%;display:inline-flex;flex-shrink:0;margin-right:6px;overflow:hidden;">
+                                        <img src="{{ category.image.url }}" width="18" height="18" style="object-fit:cover;" alt="">
+                                    </span>
+                                {% else %}
+                                    <span style="width:18px;height:18px;border-radius:50%;background:#6c757d;color:white;display:inline-flex;align-items:center;justify-content:center;font-size:0.6rem;flex-shrink:0;margin-right:6px;">
+                                        {{ category.name|slice:":1"|upper }}
+                                    </span>
+                                {% endif %}
+                                <span style="font-size:0.85rem;">{{ category.name }}</span>
+                            </span>
+                            {% if category.children.exists %}
+                                <span style="font-size:1rem;color:#adb5bd;line-height:1;">›</span>
+                            {% endif %}
+                        </a>
+                    {% if category.children.exists %}
+                        <div class="collapse" id="desk-subcat-{{ category.slug }}" data-bs-parent="#categoryDesktopTree">
+                            <ul class="list-unstyled ps-4 border-start ms-3">
+                                {% for child in category.children.all %}
+                                    <li class="border-bottom">
+                                        <a href="{% url 'categories:detail' child.slug %}"
+                                           class="d-flex align-items-center px-2 py-1 text-decoration-none small {% if current_category == child %}fw-bold text-primary{% endif %}"
+                                           style="color:#212529;">
+                                            <span class="d-flex align-items-center">
+                                                {% if child.image %}
+                                                    <span style="width:18px;height:18px;border-radius:50%;display:inline-flex;flex-shrink:0;margin-right:6px;overflow:hidden;">
+                                                        <img src="{{ child.image.url }}" width="18" height="18" style="object-fit:cover;" alt="">
+                                                    </span>
+                                                {% else %}
+                                                    <span style="width:18px;height:18px;border-radius:50%;background:#6c757d;color:white;display:inline-flex;align-items:center;justify-content:center;font-size:0.6rem;flex-shrink:0;margin-right:6px;">
+                                                        {{ child.name|slice:":1"|upper }}
+                                                    </span>
+                                                {% endif %}
+                                                <span style="font-size:0.85rem;">{{ child.name }}</span>
+                                            </span>
+                                        </a>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% if current_category and current_category.parent == category or current_category == category %}
+                            <script>document.addEventListener('DOMContentLoaded', function() { var el = document.getElementById('desk-subcat-{{ category.slug }}'); if (el) new bootstrap.Collapse(el, {toggle: true}); });</script>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </li>
+        {% endfor %}
+    </ul>
+</div>

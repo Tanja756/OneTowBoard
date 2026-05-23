@@ -53,12 +53,14 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.sites',
     'django.contrib.sitemaps',
+    'django_user_agents',
     # Наши приложения
     'users',
     'listings',
     'categories',
     'ratings',
     'search',
+    'msgs_app',
 ]
 
 # Google-авторизация (можно отключить)
@@ -111,7 +113,10 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'django_user_agents.middleware.UserAgentMiddleware',
     'config.middleware.ProfileCompletionMiddleware',   # всегда проверяем заполненность профиля
+    'config.middleware.LastActivityMiddleware',         # обновление last_activity
+    'config.middleware.UnreadMessagesMiddleware',       # уведомление о непрочитанных
 ]
 
 if ENABLE_GOOGLE_AUTH:
@@ -138,6 +143,7 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'categories.context_processors.categories_processor',
                 'config.context_processors.site_settings',
+                'config.context_processors.user_theme',
             ],
         },
     },

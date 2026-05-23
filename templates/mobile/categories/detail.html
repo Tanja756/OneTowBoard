@@ -1,0 +1,280 @@
+{% extends 'mobile/base.html' %}
+{% load static %}
+{% load url_helpers %}
+{% load category_tags %}
+{% load listing_tags %}
+
+{% block title %}{{ category.name }} — {{ site_name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+  <!-- Боковая панель с деревом категорий -->
+  <div class="col-md-3 mb-4">
+    <div class="card d-none d-md-block">
+      <div class="card-body">
+        <h6 class="card-title fw-bold">Категории</h6>
+        {% if user.is_authenticated and enable_favorites %}
+          <div class="mb-2">
+            <a href="{% url 'listings:favorites' %}" class="text-decoration-none small d-flex align-items-center gap-1 text-danger fw-semibold">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                <path fill-rule="evenodd" d="M8 1.314C12.438-3.248 23.534 4.735 8 15-7.534 4.736 3.562-3.248 8 1.314z"/>
+              </svg>
+              Избранные объявления
+            </a>
+            <hr class="my-1">
+          </div>
+        {% endif %}
+        {% show_category_tree current_category=category %}
+      </div>
+    </div>
+    <!-- Рекомендуемые объявления -->
+    <div class="d-none d-md-block">
+        {% show_recommended limit=5 %}
+    </div>
+  </div>
+
+  <!-- Основной контент -->
+  <div class="col-md-9">
+    <!-- Хлебные крошки -->
+    <nav aria-label="breadcrumb" class="mb-3" style="overflow:hidden;">
+      <ol class="breadcrumb small text-nowrap" style="--bs-breadcrumb-divider: '›'; overflow-x:auto; flex-wrap:nowrap; scrollbar-width:none; -ms-overflow-style:none;">
+        <li class="breadcrumb-item">
+          <a href="{% url 'listings:index' %}" class="text-decoration-none text-secondary">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16" style="margin-top:-2px;">
+              <path d="M8.354 1.146a.5.5 0 0 0-.708 0l-6 6A.5.5 0 0 0 1.5 7.5v7a.5.5 0 0 0 .5.5h4.5a.5.5 0 0 0 .5-.5v-4h2v4a.5.5 0 0 0 .5.5H14a.5.5 0 0 0 .5-.5v-7a.5.5 0 0 0-.146-.354L13 5.793V2.5a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5v1.293L8.354 1.146z"/>
+            </svg>
+            Главная
+          </a>
+        </li>
+        <li class="breadcrumb-item">
+          <a href="{% url 'categories:list' %}" class="text-decoration-none text-secondary">Категории</a>
+        </li>
+        {% if category.parent %}
+          <li class="breadcrumb-item">
+            <a href="{% url 'categories:detail' category.parent.slug %}" class="text-decoration-none text-secondary">{{ category.parent.name }}</a>
+          </li>
+        {% endif %}
+        <li class="breadcrumb-item active fw-semibold text-dark text-truncate" aria-current="page" style="max-width:160px;">{{ category.name }}</li>
+      </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h1 class="h5 mb-0 fw-bold">{{ category.name }}</h1>
+      <div class="btn-group btn-group-sm" role="group" aria-label="Вид отображения">
+        <a href="?{% url_replace view='grid' %}" 
+           class="btn btn-outline-secondary {% if view_mode == 'grid' %}active{% endif %}" 
+           title="Плитки">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-grid-fill" viewBox="0 0 16 16">
+            <path d="M1 2.5A1.5 1.5 0 0 1 2.5 1h3A1.5 1.5 0 0 1 7 2.5v3A1.5 1.5 0 0 1 5.5 7h-3A1.5 1.5 0 0 1 1 5.5v-3zm8 0A1.5 1.5 0 0 1 10.5 1h3A1.5 1.5 0 0 1 15 2.5v3A1.5 1.5 0 0 1 13.5 7h-3A1.5 1.5 0 0 1 9 5.5v-3zm-8 8A1.5 1.5 0 0 1 2.5 9h3A1.5 1.5 0 0 1 7 10.5v3A1.5 1.5 0 0 1 5.5 15h-3A1.5 1.5 0 0 1 1 13.5v-3zm8 0A1.5 1.5 0 0 1 10.5 9h3a1.5 1.5 0 0 1 1.5 1.5v3a1.5 1.5 0 0 1-1.5 1.5h-3A1.5 1.5 0 0 1 9 13.5v-3z"/>
+          </svg>
+        </a>
+        <a href="?{% url_replace view='list' %}" 
+           class="btn btn-outline-secondary {% if view_mode == 'list' %}active{% endif %}" 
+           title="Список">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-list" viewBox="0 0 16 16">
+            <path fill-rule="evenodd" d="M2.5 12a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5z"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+
+    <!-- Блок фильтров и сортировки -->
+    {% include 'includes/filter_sort.html' %}
+
+    <!-- Параметры категории (если есть) -->
+    {% if parameters %}
+      <div class="mb-3">
+        <form method="get" action="">
+          <div class="d-flex flex-wrap gap-3">
+            {% for param in parameters %}
+              <div class="dropdown">
+                <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                  {{ param.name }}
+                </button>
+                <ul class="dropdown-menu">
+                  <li><a class="dropdown-item" href="?{% url_replace_param param.slug '' %}">Любой</a></li>
+                  {% for choice in param.get_choices_list %}
+                    <li><a class="dropdown-item {% if selected_params|get_item:param.slug == choice %}active{% endif %}" 
+                           href="?{% url_replace_param param.slug choice %}">{{ choice }}</a></li>
+                  {% endfor %}
+                </ul>
+              </div>
+            {% endfor %}
+          </div>
+        </form>
+      </div>
+    {% endif %}
+
+    {% if view_mode == 'list' %}
+    <!-- Отображение списком -->
+    <div class="list-view">
+      {% for listing in page_obj %}
+        <div class="card mb-2 border-0 shadow-sm listing-item position-relative {% if listing.is_promoted %}card-promoted{% endif %}">
+          {% if listing.pk in favorite_ids and user.is_authenticated and enable_favorites %}
+            <div class="position-absolute bottom-0 end-0 m-1" style="z-index: 2;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#dc3545" viewBox="0 0 16 16">
+                <path fill-rule="evenodd" d="M8 1.314C12.438-3.248 23.534 4.735 8 15-7.534 4.736 3.562-3.248 8 1.314z"/>
+              </svg>
+            </div>
+          {% endif %}
+          <div class="card-body p-2">
+            <div class="row g-2 align-items-start">
+              <!-- 1-я колонка: фото -->
+              <div class="col-auto">
+                <a href="{% url 'listings:detail' listing.pk %}">
+                  {% with listing.images.first as main_image %}
+                    {% if main_image %}
+                      <img src="{{ main_image.thumbnail_url|default:main_image.image.url }}" class="rounded" width="80" height="80" style="object-fit: cover;" alt="">
+                    {% else %}
+                      {% get_category_image listing.category as cat_image %}
+                      {% if cat_image %}
+                        <img src="{{ cat_image }}" class="rounded" width="80" height="80" style="object-fit: contain; background: #f8f8f8;" alt="">
+                      {% else %}
+                        <div class="bg-light rounded d-flex align-items-center justify-content-center" style="width:80px; height:80px;">
+                          <span class="text-muted small">Нет фото</span>
+                        </div>
+                      {% endif %}
+                    {% endif %}
+                  {% endwith %}
+                </a>
+              </div>
+
+              <!-- 2-я колонка: название, описание, автор+дата -->
+              <div class="col">
+                <a href="{% url 'listings:detail' listing.pk %}" class="text-decoration-none text-dark fw-bold d-inline-block mb-1">{{ listing.title }}</a>
+                <p class="text-muted small listing-description">{{ listing.description|truncatewords:15 }}</p>
+                <div class="d-flex align-items-center small text-muted">
+                  <span class="d-flex align-items-center text-truncate me-2" style="min-width: 0;">
+                    {% if listing.author.profile %}
+                      {% if listing.author.profile.avatar %}
+                        <img src="{{ listing.author.profile.avatar.url }}" class="rounded-circle me-1" width="16" height="16" style="object-fit: cover; flex-shrink: 0;" alt="">
+                      {% else %}
+                        <div class="bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center me-1" style="width:16px; height:16px; font-size:0.5rem; flex-shrink: 0;">
+                          {{ listing.author.username|slice:":1"|upper }}
+                        </div>
+                      {% endif %}
+                    {% endif %}
+                    <span class="text-nowrap text-truncate">
+                      {% if listing.author.profile %}
+                        {{ listing.author.profile.get_display_name }}
+                      {% else %}
+                        {{ listing.author.username }}
+                      {% endif %}
+                    </span>
+                  </span>
+                  <span class="text-nowrap">{{ listing.created_at|short_date }}</span>
+                </div>
+              </div>
+
+              <!-- 3-я колонка: цена, город, плашки -->
+              <div class="col-auto ms-auto text-end" style="min-width: 120px;">
+                {% if listing.price %}
+                  <div class="fw-bold text-success fs-5 lh-1">{{ listing.price|price_display }} ₽</div>
+                {% endif %}
+                {% if listing.author.profile.city %}
+                  <div class="text-muted small">{{ listing.author.profile.city }}</div>
+                {% endif %}
+                <div class="mt-1">
+                  {% if listing.is_urgent %}
+                    <span class="badge bg-danger">Срочно</span>
+                  {% endif %}
+                  {% if listing.is_promoted %}
+                    <span class="badge bg-warning text-dark">Продвижение</span>
+                  {% endif %}
+                  {% if listing.is_sticky %}
+                    <span class="badge bg-info">Закреплено</span>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+            {% if listing.is_urgent %}
+              <span class="badge bg-danger card-urgent-badge">Срочно</span>
+            {% endif %}
+          </div>
+        </div>
+      {% empty %}
+        <div>В этой категории пока нет объявлений.</div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <!-- Отображение плиткой (сетка) -->
+    <div class="row g-3">
+      {% for listing in page_obj %}
+        <div class="col-6 col-md-4 col-lg-3">
+          <a href="{% url 'listings:detail' listing.pk %}" class="text-decoration-none text-dark">
+            <div class="card h-100 border-0 shadow-sm position-relative {% if listing.is_promoted %}card-promoted{% endif %}">
+              {% if listing.pk in favorite_ids and user.is_authenticated and enable_favorites %}
+                <div class="position-absolute top-0 end-0 m-1" style="z-index: 2;">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#dc3545" viewBox="0 0 16 16">
+                    <path fill-rule="evenodd" d="M8 1.314C12.438-3.248 23.534 4.735 8 15-7.534 4.736 3.562-3.248 8 1.314z"/>
+                  </svg>
+                </div>
+              {% endif %}
+              {% with listing.images.first as main_image %}
+                {% if main_image %}
+                  <img src="{{ main_image.thumbnail_url|default:main_image.image.url }}" class="card-img-top" alt="{{ listing.title }}" style="height: 150px; object-fit: cover;">
+                {% else %}
+                  {% get_category_image listing.category as cat_image %}
+                  {% if cat_image %}
+                    <img src="{{ cat_image }}" class="card-img-top" alt="{{ listing.title }}" style="height: 150px; object-fit: contain; background: #f8f8f8;">
+                  {% else %}
+                    <div class="bg-light d-flex align-items-center justify-content-center" style="height: 150px;">
+                      <span class="text-muted">Нет фото</span>
+                    </div>
+                  {% endif %}
+                {% endif %}
+              {% endwith %}
+              <div class="card-body p-2 d-flex flex-column">
+                <div style="min-height: 1.5rem;">
+                  {% if listing.price %}
+                    <div class="fw-bold fs-6 text-success">{{ listing.price|price_display }} ₽</div>
+                  {% endif %}
+                </div>
+                <div class="small text-truncate fw-bold">{{ listing.title }}</div>
+                <div class="mt-auto d-flex justify-content-between align-items-center small text-muted">
+                  <span class="d-flex align-items-center text-truncate">
+                    {% if listing.author.profile %}
+                      {% if listing.author.profile.avatar %}
+                        <img src="{{ listing.author.profile.avatar.url }}" class="rounded-circle me-1" width="18" height="18" style="object-fit: cover;" alt="">
+                      {% else %}
+                        <div class="bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center me-1" style="width:18px; height:18px; font-size:0.6rem;">
+                          {{ listing.author.username|slice:":1"|upper }}
+                        </div>
+                      {% endif %}
+                      {{ listing.author.profile.get_display_name }}
+                    {% else %}
+                      {{ listing.author.username }}
+                    {% endif %}
+                  </span>
+                  <span class="text-nowrap ms-2">{{ listing.created_at|short_date }}</span>
+                </div>
+              </div>
+              {% if listing.is_urgent %}
+                <span class="badge bg-danger card-urgent-badge">Срочно</span>
+              {% endif %}
+            </div>
+          </a>
+        </div>
+      {% empty %}
+        <div class="col">В этой категории пока нет объявлений.</div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Пагинация -->
+    <nav class="mt-4">
+      <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+          <li class="page-item"><a class="page-link" href="?{% url_replace page=1 %}">&laquo;</a></li>
+          <li class="page-item"><a class="page-link" href="?{% url_replace page=page_obj.previous_page_number %}">←</a></li>
+        {% endif %}
+        <li class="page-item disabled"><span class="page-link">{{ page_obj.number }} из {{ page_obj.paginator.num_pages }}</span></li>
+        {% if page_obj.has_next %}
+          <li class="page-item"><a class="page-link" href="?{% url_replace page=page_obj.next_page_number %}">→</a></li>
+          <li class="page-item"><a class="page-link" href="?{% url_replace page=page_obj.paginator.num_pages }}">&raquo;</a></li>
+        {% endif %}
+      </ul>
+    </nav>
+  </div>
+</div>
+{% endblock %}

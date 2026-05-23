@@ -1,0 +1,111 @@
+{% load static %}
+
+<!-- Мобильное дерево категорий (для выбора категории при создании) -->
+<ul class="list-unstyled" id="categoryTreeSelectMobile">
+    {% for category in categories %}
+        <li class="border-bottom">
+            <div class="d-flex align-items-center px-3 py-2">
+                {% if category.children.exists %}
+                    <button class="btn btn-sm btn-light p-0 me-2 tree-toggle collapsed flex-shrink-0" type="button"
+                            data-bs-toggle="collapse" data-bs-target="#mob-select-subcat-{{ category.slug }}"
+                            aria-expanded="false" style="width:20px;height:20px;font-size:0.7rem;line-height:1;">
+                        <span class="toggle-icon">▶</span>
+                    </button>
+                {% else %}
+                    <span style="width:20px;display:inline-block;flex-shrink:0;"></span>
+                {% endif %}
+                <!-- Иконка категории -->
+                <div class="me-2 flex-shrink-0">
+                    {% if category.image %}
+                        <img src="{{ category.image.url }}" class="rounded-circle" width="20" height="20" style="object-fit: cover;" alt="">
+                    {% else %}
+                        <div class="bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center" style="width:20px; height:20px; font-size:0.6rem;">
+                            {{ category.name|slice:":1"|upper }}
+                        </div>
+                    {% endif %}
+                </div>
+                <a href="#" class="text-decoration-none category-select-item flex-grow-1 {% if selected_slug == category.slug %}fw-bold text-primary{% endif %}"
+                   data-slug="{{ category.slug }}"
+                   data-has-children="{{ category.children.exists|yesno:'true,false' }}">
+                    {{ category.name }}
+                </a>
+            </div>
+            {% if category.children.exists %}
+                <div class="collapse ps-3 bg-light" id="mob-select-subcat-{{ category.slug }}">
+                    <ul class="list-unstyled">
+                        {% for child in category.children.all %}
+                            <li class="border-bottom border-light">
+                                <div class="d-flex align-items-center px-2 py-2">
+                                    <div class="me-2 flex-shrink-0">
+                                        {% if child.image %}
+                                            <img src="{{ child.image.url }}" class="rounded-circle" width="18" height="18" style="object-fit: cover;" alt="">
+                                        {% else %}
+                                            <div class="bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center" style="width:18px; height:18px; font-size:0.55rem;">
+                                                {{ child.name|slice:":1"|upper }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <a href="#" class="text-decoration-none category-select-item {% if selected_slug == child.slug %}fw-bold text-primary{% endif %}"
+                                       data-slug="{{ child.slug }}"
+                                       data-has-children="false">
+                                        {{ child.name }}
+                                    </a>
+                                </div>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+        </li>
+    {% endfor %}
+</ul>
+
+<script>
+(function() {
+  const tree = document.getElementById('categoryTreeSelectMobile');
+  if (!tree) return;
+
+  const hiddenInput = document.getElementById('id_category_slug');
+  const items = tree.querySelectorAll('.category-select-item');
+  const toggles = tree.querySelectorAll('.tree-toggle');
+
+  tree.addEventListener('show.bs.collapse', function(e) {
+    const btn = tree.querySelector(`[data-bs-target="#${e.target.id}"]`);
+    if (btn) btn.querySelector('.toggle-icon').textContent = '▼';
+  });
+  tree.addEventListener('hide.bs.collapse', function(e) {
+    const btn = tree.querySelector(`[data-bs-target="#${e.target.id}"]`);
+    if (btn) btn.querySelector('.toggle-icon').textContent = '▶';
+  });
+
+  tree.addEventListener('click', function(e) {
+    const item = e.target.closest('.category-select-item');
+    if (!item) return;
+
+    const hasChildren = item.getAttribute('data-has-children') === 'true';
+    if (hasChildren) {
+      e.preventDefault();
+      const slug = item.getAttribute('data-slug');
+      const btn = tree.querySelector(`[data-bs-target="#mob-select-subcat-${slug}"]`);
+      if (btn) btn.click();
+      return;
+    }
+
+    e.preventDefault();
+    items.forEach(i => i.classList.remove('fw-bold', 'text-primary'));
+    item.classList.add('fw-bold', 'text-primary');
+    if (hiddenInput) {
+      hiddenInput.value = item.getAttribute('data-slug');
+      hiddenInput.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+  });
+
+  if (hiddenInput && hiddenInput.value) {
+    const selectedItem = tree.querySelector(`.category-select-item[data-slug="${hiddenInput.value}"]`);
+    if (selectedItem) {
+      items.forEach(i => i.classList.remove('fw-bold', 'text-primary'));
+      selectedItem.classList.add('fw-bold', 'text-primary');
+    }
+  }
+})();
+</script>

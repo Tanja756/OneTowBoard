@@ -2,7 +2,7 @@
 
 [English](README_EN.md)
 
-Современная доска объявлений: модерация, иерархические категории, динамические параметры, продвижение объявлений и адаптивный интерфейс на Bootstrap 5. Готова к запуску в **Docker** (SQLite, media на томах, cron, Nginx).
+Современная доска объявлений: модерация, иерархические категории, динамические параметры, продвижение объявлений, **адаптивный интерфейс с раздельными шаблонами для ПК и мобильных** на Bootstrap 5. Готова к запуску в **Docker** (SQLite, media на томах, cron, Nginx).
 
 **Демо:** [gripol.online](https://gripol.online)
 
@@ -16,6 +16,7 @@
 | Bootstrap 5.3 | UI (CDN) |
 | Pillow | Изображения, сжатие до 850 px |
 | django-allauth + cryptography | Вход через Google (опционально) |
+| django-user-agents | Определение устройства (ПК/мобильный) |
 | Gunicorn + WhiteNoise | Продакшен |
 | Docker + cron | Контейнер, автозавершение просроченных объявлений |
 
@@ -65,6 +66,14 @@
 - Завершённые объявления отображаются блеклыми с пометкой
 - Номер телефона отсутствует в HTML — загружается как изображение с сервера (защита от парсинга)
 - Можно отключить через `ENABLE_FAVORITES=False` в `.env`
+
+### Адаптивный интерфейс
+
+- **Автоматическое определение устройства** через `django_user_agents` — ПК или мобильный
+- Функция `get_device_template(request, template_name)` в `apps/utils.py` выбирает шаблон из `desktop/` или `mobile/`
+- **Десктоп**: полная шапка с логотипом, поиском (с категориями), кнопкой «+ Новое объявление», меню пользователя, боковая панель с деревом категорий и блоком «Рекомендуемые», подвал
+- **Мобильный**: компактная шапка, поиск на всю ширину, нижняя навигационная панель (Главная, Поиск, Добавить, Избранное, Профиль), модальное окно выбора категории с пошаговым деревом, `padding-bottom: 70px` в CSS
+- Общие компоненты (`includes/filter_sort.html`, `ratings/star_rating.html`) вынесены в `templates/` и используются обеими версиями
 
 ### Безопасность
 
@@ -275,17 +284,35 @@ python manage.py import_listings ./data --param deal_type sale
 
 ```
 OneTwoBoard/
-├── config/                 # settings, urls, sitemaps, middleware
+├── config/                 # settings, urls, sitemaps, middleware, context_processors
 ├── apps/
-│   ├── users/              # профили, OAuth
-│   ├── listings/           # объявления, фото, просмотры, import/expire
-│   ├── categories/         # дерево категорий, параметры
-│   ├── search/             # поиск и фильтры
-│   └── ratings/            # заготовка под отзывы
+│   ├── users/              # профили, OAuth, регистрация
+│   ├── listings/           # объявления, фото, просмотры, импорт/expire
+│   ├── categories/         # дерево категорий, параметры, фильтры
+│   ├── search/             # поиск и сортировка
+│   └── ratings/            # рейтинги и отзывы (в разработке)
 ├── templates/
-├── static/                 # исходники CSS, favicon (collectstatic → staticfiles)
-├── staticfiles/            # собранная статика (генерируется)
-├── media/
+│   ├── base.html                 # корневой базовый шаблон (для allauth, email)
+│   ├── desktop/                  # шаблоны для ПК
+│   │   ├── base.html
+│   │   ├── listings/
+│   │   ├── categories/
+│   │   ├── search/
+│   │   └── users/
+│   ├── mobile/                   # шаблоны для мобильных
+│   │   ├── base.html
+│   │   ├── listings/
+│   │   ├── categories/
+│   │   ├── search/
+│   │   └── users/
+│   ├── includes/                 # общие компоненты (filter_sort.html)
+│   ├── ratings/                  # общие компоненты (star_rating.html)
+│   └── categories/
+│       └── parameters_form.html  # AJAX-рендер параметров
+├── static/                 # CSS, favicon
+├── staticfiles/            # собранная статика (генерируется collectstatic)
+├── media/                  # пользовательские загрузки
+├── db/                     # SQLite (продакшен)
 ├── scripts/run_expire.sh   # обёртка для cron
 ├── Dockerfile
 ├── entrypoint.sh

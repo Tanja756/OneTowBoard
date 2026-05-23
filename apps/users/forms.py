@@ -96,12 +96,17 @@ class RegisterForm(UserCreationForm):
 class ProfileForm(forms.ModelForm):
     class Meta:
         model = Profile
-        fields = ['city', 'profile_type', 'display_name', 'avatar']
+        fields = ['city', 'profile_type', 'display_name', 'avatar', 'theme', 'telegram_chat_id']
         widgets = {
             'city': forms.TextInput(attrs={'class': 'form-control'}),
             'display_name': forms.TextInput(attrs={'class': 'form-control'}),
             'profile_type': forms.Select(attrs={'class': 'form-select'}),
             'avatar': forms.FileInput(attrs={'class': 'form-control'}),
+            'theme': forms.Select(attrs={'class': 'form-select'}),
+            'telegram_chat_id': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ваш Telegram Chat ID',
+            }),
         }
 
     def clean_phone(self):

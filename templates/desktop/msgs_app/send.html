@@ -1,0 +1,34 @@
+{% extends 'desktop/base.html' %}
+{% load static %}
+
+{% block title %}Написать сообщение — {{ site_name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-3">
+  <div class="row justify-content-center">
+    <div class="col-lg-6">
+      <h1 class="h4 mb-3">Новое сообщение</h1>
+
+      <div class="card shadow-sm mb-3">
+        <div class="card-body">
+          <p class="mb-1"><strong>Объявление:</strong> <a href="{% url 'listings:detail' listing.id %}">{{ listing.title }}</a></p>
+          <p class="mb-0"><strong>Автор:</strong> {{ listing.author.profile.get_display_name }}</p>
+        </div>
+      </div>
+
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <form method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+              {{ form.text }}
+            </div>
+            <button type="submit" class="btn btn-primary">Отправить</button>
+            <a href="{% url 'listings:detail' listing.id %}" class="btn btn-outline-secondary">Отмена</a>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
