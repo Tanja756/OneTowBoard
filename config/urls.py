@@ -21,6 +21,7 @@ urlpatterns = [
     path('ratings/', include('ratings.urls')),
     path('search/', include('search.urls')),
     path('messages/', include('msgs_app.urls')),
+    path('api/', include('api.urls')),
     path('sitemap.xml', sitemap_views.index, {'sitemaps': sitemaps, 'sitemap_url_name': 'sitemaps'}),
     path('sitemaps-<section>.xml', sitemap_views.sitemap, {'sitemaps': sitemaps}, name='sitemaps'),
 ]

@@ -61,6 +61,9 @@ INSTALLED_APPS = [
     'ratings',
     'search',
     'msgs_app',
+    'rest_framework',
+    'rest_framework_simplejwt',
+    'django_filters',
 ]
 
 # Google-авторизация (можно отключить)
@@ -186,6 +189,27 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 ADMIN_SITE_HEADER = "OneTwoBoard — управление"
 ADMIN_SITE_TITLE = "OneTwoBoard Admin"
 ADMIN_INDEX_TITLE = "Добро пожаловать в панель управления OneTwoBoard"
+
+# ---------- DRF ----------
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticatedOrReadOnly',
+    ),
+    'DEFAULT_FILTER_BACKENDS': (
+        'django_filters.rest_framework.DjangoFilterBackend',
+    ),
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 20,
+}
+
+from datetime import timedelta
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+}
 
 # ---------- Почтовые настройки ----------
 EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
