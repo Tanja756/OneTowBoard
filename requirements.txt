@@ -7,3 +7,6 @@ PyJWT
 cryptography
 django-allauth
 django-user-agents
+djangorestframework
+djangorestframework-simplejwt
+django-filter

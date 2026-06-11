@@ -6,8 +6,8 @@ from .models import Profile
 
 class UserLoginForm(forms.Form):
     username = forms.CharField(
-        label='Имя пользователя',
-        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Логин'})
+        label='Логин или Email',
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Логин или Email'})
     )
     password = forms.CharField(
         label='Пароль',

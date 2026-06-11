@@ -92,15 +92,21 @@ def login_view(request):
     if request.method == 'POST':
         form = UserLoginForm(request.POST)
         if form.is_valid():
-            username = form.cleaned_data['username']
+            username_or_email = form.cleaned_data['username']
             password = form.cleaned_data['password']
-            user = authenticate(request, username=username, password=password)
+            if '@' in username_or_email:
+                try:
+                    user_obj = User.objects.get(email=username_or_email)
+                    username_or_email = user_obj.username
+                except User.DoesNotExist:
+                    username_or_email = None
+            user = authenticate(request, username=username_or_email, password=password) if username_or_email else None
             if user is not None:
                 login(request, user)
                 messages.success(request, 'Вы вошли в систему.')
                 return redirect('listings:index')
             else:
-                messages.error(request, 'Неверное имя пользователя или пароль.')
+                messages.error(request, 'Неверное имя пользователя (email) или пароль.')
     else:
         form = UserLoginForm()
     template_name = get_device_template(request, 'users/login.html')

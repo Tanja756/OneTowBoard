@@ -14,7 +14,7 @@
           {% csrf_token %}
           {% if form.errors %}
             <div class="alert alert-danger">
-              Неверное имя пользователя или пароль.
+              Неверный логин (email) или пароль.
             </div>
           {% endif %}
           <div class="mb-3">

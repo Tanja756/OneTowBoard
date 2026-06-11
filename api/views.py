@@ -5,6 +5,8 @@ from django.contrib.auth.models import User
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from datetime import date
+from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from .serializers import (
     UserSerializer,
@@ -25,6 +27,19 @@ from ratings.models import Rating
 
 
 # ── Auth / Users ──────────────────────────────────────────────────────────────
+
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    def validate(self, attrs):
+        username_or_email = attrs.get(self.username_field)
+        user = User.objects.filter(email=username_or_email).first()
+        if user:
+            attrs[self.username_field] = user.username
+        return super().validate(attrs)
+
+
+class CustomTokenObtainPairView(TokenObtainPairView):
+    serializer_class = CustomTokenObtainPairSerializer
+
 
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
